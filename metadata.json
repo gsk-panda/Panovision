@@ -1,0 +1,5 @@
+{
+  "name": "PanoVision",
+  "description": "A high-performance security log analysis tool designed for Palo Alto Networks Panorama, featuring real-time search, visualization, and detailed traffic inspection.",
+  "requestFramePermissions": []
+}
