@@ -72,7 +72,15 @@ fi
 echo ""
 echo "Step 6: Deploying application files..."
 rsync -av --delete "$PROJECT_DIR/dist/" "$APP_DIR/"
-chown -R "$APP_USER:$APP_USER" "$APP_DIR"
+
+NGINX_USER="nginx"
+if ! id "$NGINX_USER" &>/dev/null; then
+    NGINX_USER="www-data"
+fi
+
+chown -R "$NGINX_USER:$NGINX_USER" "$APP_DIR"
+find "$APP_DIR" -type d -exec chmod 755 {} \;
+find "$APP_DIR" -type f -exec chmod 644 {} \;
 
 echo ""
 echo "Step 7: Configuring Nginx..."

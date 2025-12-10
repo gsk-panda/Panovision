@@ -33,7 +33,15 @@ fi
 echo ""
 echo "Step 3: Deploying updated files..."
 rsync -av --delete "$PROJECT_DIR/dist/" "$APP_DIR/"
-chown -R "$APP_USER:$APP_USER" "$APP_DIR"
+
+NGINX_USER="nginx"
+if ! id "$NGINX_USER" &>/dev/null; then
+    NGINX_USER="www-data"
+fi
+
+chown -R "$NGINX_USER:$NGINX_USER" "$APP_DIR"
+find "$APP_DIR" -type d -exec chmod 755 {} \;
+find "$APP_DIR" -type f -exec chmod 644 {} \;
 
 echo ""
 echo "Step 4: Reloading Nginx..."
