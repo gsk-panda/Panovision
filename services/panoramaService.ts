@@ -1,64 +1,16 @@
 import { TrafficLog, SearchParams } from '../types';
 
-// In a real scenario, these would come from the backend or environment variables
-const PROXY_PANORAMA = '/api/panorama';
-const MOCK_DELAY = 800;
+const PANORAMA_SERVER = 'https://panorama.officeours.com';
+const PANORAMA_API_KEY = 'LUFRPT0xQ0JKa2YrR1hFcVdra1pjL2Q2V2w0eXo0bmc9dzczNHg3T0VsRS9yYmFMcEpWdXBWdnF3cEQ2OTduSU9yRTlqQmJEbyt1bDY0NlR1VUhrNlkybGRRTHJ0Y2ZIdw==';
 
-// Helper to format date as yyyy-mm-dd hh:mm:ss
-const formatDate = (date: Date): string => {
-  const pad = (n: number) => n.toString().padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-};
-
-// Helper to generate mock data if the backend is unreachable (for UI demonstration)
-const generateMockLogs = (count: number): TrafficLog[] => {
-  const actions = ['allow', 'deny', 'drop', 'reset-server'];
-  const apps = ['ssl', 'web-browsing', 'dns', 'ssh', 'office365', 'unknown-tcp'];
-  const zones = ['Trust', 'Untrust', 'DMZ', 'Guest'];
-  const interfaces = ['ethernet1/1', 'ethernet1/2', 'ethernet1/3', 'tunnel.1', 'vlan.10'];
-  const endReasons = ['tcp-fin', 'aged-out', 'tcp-rst-from-client', 'tcp-rst-from-server', 'policy-deny'];
-  
-  return Array.from({ length: count }).map(() => {
-    const isAllow = Math.random() > 0.3;
-    const action = isAllow ? 'allow' : actions[Math.floor(Math.random() * (actions.length - 1)) + 1] as any;
-    const protocol = 'tcp';
-    
-    // Determine end reason based on action
-    let endReason = 'tcp-fin';
-    if (action === 'deny' || action === 'drop') endReason = 'policy-deny';
-    else if (action === 'reset-server') endReason = 'tcp-rst-from-server';
-    else endReason = endReasons[Math.floor(Math.random() * endReasons.length)];
-
-    return {
-      id: crypto.randomUUID(),
-      receive_time: formatDate(new Date(Date.now() - Math.floor(Math.random() * 10000000))),
-      serial: '001801000' + Math.floor(Math.random() * 999),
-      device_name: 'PA-5220-Headquarters',
-      type: 'TRAFFIC',
-      subtype: 'end',
-      src_ip: `10.10.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
-      dst_ip: `172.16.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
-      src_port: Math.floor(Math.random() * 60000) + 1024,
-      dst_port: [80, 443, 53, 22, 8080][Math.floor(Math.random() * 5)],
-      protocol: protocol,
-      ip_protocol: protocol,
-      app: apps[Math.floor(Math.random() * apps.length)],
-      action,
-      rule: isAllow ? 'Allow-Internet' : 'Default-Deny',
-      session_id: Math.floor(Math.random() * 100000).toString(),
-      session_end_reason: endReason,
-      bytes: Math.floor(Math.random() * 50000),
-      packets: Math.floor(Math.random() * 1000),
-      packets_sent: Math.floor(Math.random() * 500),
-      packets_received: Math.floor(Math.random() * 500),
-      src_zone: zones[Math.floor(Math.random() * zones.length)],
-      dst_zone: 'Untrust',
-      ingress_interface: interfaces[Math.floor(Math.random() * interfaces.length)],
-      egress_interface: interfaces[Math.floor(Math.random() * interfaces.length)],
-      duration: Math.floor(Math.random() * 60),
-    };
-  });
-};
+export interface ApiError {
+  message: string;
+  statusCode?: number;
+  statusText?: string;
+  responseBody?: string;
+  url?: string;
+  timestamp: string;
+}
 
 const buildPaloAltoQuery = (params: SearchParams): string => {
   const parts: string[] = [];
@@ -142,46 +94,157 @@ const parsePaloAltoXML = (xmlString: string): TrafficLog[] => {
   return logs;
 };
 
-// Poll for job completion if Panorama returns a job ID (async query)
-const pollJob = async (proxyUrl: string, apiKey: string, jobId: string): Promise<TrafficLog[]> => {
-  const pollUrl = `${proxyUrl}/?type=log&action=get&job-id=${jobId}&key=${encodeURIComponent(apiKey)}`;
+const pollJob = async (serverUrl: string, apiKey: string, jobId: string): Promise<TrafficLog[]> => {
+  const pollUrl = `${serverUrl}/api/?type=log&action=get&job-id=${jobId}&key=${encodeURIComponent(apiKey)}`;
+  
   for (let i = 0; i < 40; i++) {
     await new Promise(r => setTimeout(r, 1000));
     try {
       const resp = await fetch(pollUrl);
+      if (!resp.ok) {
+        const error: ApiError = {
+          message: `Job polling failed: ${resp.status} ${resp.statusText}`,
+          statusCode: resp.status,
+          statusText: resp.statusText,
+          url: pollUrl.replace(apiKey, '***REDACTED***'),
+          timestamp: new Date().toISOString(),
+        };
+        throw error;
+      }
+      
       const text = await resp.text();
-      if (text.includes('<status>FIN</status>')) return parsePaloAltoXML(text);
-      if (text.includes('status="error"')) throw new Error(`Async Job Failed: ${text}`);
-    } catch (e) { 
-      // Continue polling on transient errors
+      
+      if (text.includes('<status>FIN</status>')) {
+        return parsePaloAltoXML(text);
+      }
+      
+      if (text.includes('status="error"') || text.includes('<msg>')) {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(text, 'text/xml');
+        const errorMsg = xmlDoc.getElementsByTagName('msg')[0]?.textContent || 'Unknown job error';
+        const error: ApiError = {
+          message: `Job failed: ${errorMsg}`,
+          responseBody: text,
+          url: pollUrl.replace(apiKey, '***REDACTED***'),
+          timestamp: new Date().toISOString(),
+        };
+        throw error;
+      }
+    } catch (e: any) {
+      if (e.statusCode || e.message?.includes('Job')) {
+        throw e;
+      }
     }
   }
-  throw new Error(`Timeout polling job ${jobId}`);
+  
+  const timeoutError: ApiError = {
+    message: `Timeout polling job ${jobId} after 40 seconds`,
+    url: pollUrl.replace(apiKey, '***REDACTED***'),
+    timestamp: new Date().toISOString(),
+  };
+  throw timeoutError;
+};
+
+const buildTimeRange = (params: SearchParams): string => {
+  if (params.timeRange === 'custom' && params.startTime && params.endTime) {
+    const start = new Date(params.startTime).toISOString().replace(/[-:]/g, '').split('.')[0];
+    const end = new Date(params.endTime).toISOString().replace(/[-:]/g, '').split('.')[0];
+    return `${start}-${end}`;
+  }
+  
+  const timeRanges: Record<string, string> = {
+    'last-15-minutes': 'last-15-minutes',
+    'last-60-minutes': 'last-60-minutes',
+    'last-6-hrs': 'last-6-hours',
+    'last-24-hrs': 'last-24-hours',
+  };
+  
+  return timeRanges[params.timeRange] || 'last-15-minutes';
 };
 
 export const fetchLogs = async (params: SearchParams): Promise<TrafficLog[]> => {
   const query = buildPaloAltoQuery(params);
-  
-  // Safe parsing of limit which can be string or number
   const val = Number(params.limit);
   const limitVal = isNaN(val) ? 50 : val;
-  const limit = limitVal ? Math.min(limitVal * 2, 5000) : 100; 
+  const limit = Math.min(limitVal, 5000);
+  const timeRange = buildTimeRange(params);
+  
+  const urlParams: string[] = [
+    `type=log`,
+    `log-type=traffic`,
+    `key=${encodeURIComponent(PANORAMA_API_KEY)}`,
+    `nlogs=${limit}`,
+  ];
+  
+  if (query) {
+    urlParams.push(`query=${encodeURIComponent(query)}`);
+  }
+  
+  if (timeRange) {
+    urlParams.push(`time-range=${encodeURIComponent(timeRange)}`);
+  }
+  
+  const url = `${PANORAMA_SERVER}/api/?${urlParams.join('&')}`;
   
   try {
-    // Attempt to hit the backend
-    // NOTE: In the preview environment, this fetch will likely fail (404/Network Error).
-    // We catch this and return MOCK data to demonstrate the UI capabilities.
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/xml',
+      },
+    });
     
-    // Check if we are in a production environment with the API key
-    // For this demo code, we assume if fetch fails, use mock.
+    if (!response.ok) {
+      const responseText = await response.text();
+      const error: ApiError = {
+        message: `Panorama API request failed: ${response.status} ${response.statusText}`,
+        statusCode: response.status,
+        statusText: response.statusText,
+        responseBody: responseText,
+        url: url.replace(PANORAMA_API_KEY, '***REDACTED***'),
+        timestamp: new Date().toISOString(),
+      };
+      throw error;
+    }
     
-    // Intentionally mocking for this specific demonstration code since the backend server isn't running
-    await new Promise(resolve => setTimeout(resolve, MOCK_DELAY));
-    return generateMockLogs(limitVal || 50);
-
+    const xmlText = await response.text();
+    
+    if (xmlText.includes('<job>')) {
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+      const jobId = xmlDoc.getElementsByTagName('job')[0]?.textContent;
+      if (jobId) {
+        return await pollJob(PANORAMA_SERVER, PANORAMA_API_KEY, jobId);
+      }
+    }
+    
+    if (xmlText.includes('status="error"') || xmlText.includes('<msg>')) {
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+      const errorMsg = xmlDoc.getElementsByTagName('msg')[0]?.textContent || 'Unknown API error';
+      const error: ApiError = {
+        message: `Panorama API error: ${errorMsg}`,
+        statusCode: response.status,
+        responseBody: xmlText,
+        url: url.replace(PANORAMA_API_KEY, '***REDACTED***'),
+        timestamp: new Date().toISOString(),
+      };
+      throw error;
+    }
+    
+    return parsePaloAltoXML(xmlText);
+    
   } catch (error: any) {
-    console.error("Panorama API Error, falling back to mock:", error);
-    // Fallback for demo purposes
-    return generateMockLogs(limitVal || 50);
+    if (error.statusCode || error.message?.includes('Panorama')) {
+      throw error;
+    }
+    
+    const apiError: ApiError = {
+      message: error.message || 'Network error connecting to Panorama',
+      responseBody: error.toString(),
+      url: url.replace(PANORAMA_API_KEY, '***REDACTED***'),
+      timestamp: new Date().toISOString(),
+    };
+    throw apiError;
   }
 };

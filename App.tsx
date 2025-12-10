@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { TrafficLog, ColumnDef, SearchParams, AuthUser, LogStats } from './types';
-import { fetchLogs } from './services/panoramaService';
+import { fetchLogs, ApiError } from './services/panoramaService';
 import SearchHeader from './components/SearchHeader';
 import ColumnCustomizer from './components/ColumnCustomizer';
 import StatsWidget from './components/StatsWidget';
 import LoginPage from './components/LoginPage';
 import LogDetailModal from './components/LogDetailModal';
+import ErrorDiagnosisModal from './components/ErrorDiagnosisModal';
 import Logo from './components/Logo';
 import { Settings, AlertCircle, LogOut, User, ArrowDown, ArrowUp, Search, GripVertical } from 'lucide-react';
 
@@ -74,6 +75,7 @@ function App() {
   const [sortCol, setSortCol] = useState<keyof TrafficLog>('receive_time');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [selectedLog, setSelectedLog] = useState<TrafficLog | null>(null);
+  const [apiError, setApiError] = useState<ApiError | null>(null);
   
   // Drag and Drop state
   const [draggedColId, setDraggedColId] = useState<string | null>(null);
@@ -93,11 +95,20 @@ function App() {
   const handleSearch = async (params: SearchParams) => {
     setIsSearching(true);
     setLogs([]);
+    setApiError(null);
     try {
       const data = await fetchLogs(params);
       setLogs(data);
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      console.error('API Error:', error);
+      if (error.statusCode || error.message || error.timestamp) {
+        setApiError(error as ApiError);
+      } else {
+        setApiError({
+          message: error.message || 'Unknown error occurred',
+          timestamp: new Date().toISOString(),
+        });
+      }
     } finally {
       setIsSearching(false);
     }
@@ -211,6 +222,25 @@ function App() {
                 Customize View
             </button>
         </div>
+
+        {/* Error Banner */}
+        {apiError && (
+          <div className="mb-4 bg-red-950/50 border border-red-500/30 rounded-lg p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-red-400">API Error: {apiError.message}</p>
+                <p className="text-xs text-slate-400 mt-1">Click to view detailed diagnosis</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setApiError(apiError)}
+              className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-500 rounded-md transition-colors"
+            >
+              View Details
+            </button>
+          </div>
+        )}
 
         {/* Stats */}
         {logs.length > 0 && <StatsWidget stats={stats} />}
@@ -349,6 +379,13 @@ function App() {
         <LogDetailModal 
             log={selectedLog} 
             onClose={() => setSelectedLog(null)} 
+        />
+      )}
+
+      {apiError && (
+        <ErrorDiagnosisModal 
+            error={apiError} 
+            onClose={() => setApiError(null)} 
         />
       )}
     </div>
