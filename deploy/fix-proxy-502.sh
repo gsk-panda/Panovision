@@ -22,8 +22,8 @@ fi
 echo ""
 
 echo "Step 2: Testing connectivity to Panorama..."
-if curl -k -s -o /dev/null -w "%{http_code}" --connect-timeout 10 https://panorama.officeours.com/api/?type=log&log-type=traffic&key=test&nlogs=1 | grep -q "[0-9]"; then
-    HTTP_CODE=$(curl -k -s -o /dev/null -w "%{http_code}" --connect-timeout 10 https://panorama.officeours.com/api/?type=log&log-type=traffic&key=test&nlogs=1)
+HTTP_CODE=$(curl -k -s -o /dev/null -w "%{http_code}" --connect-timeout 10 "https://panorama.officeours.com/api/?type=log&log-type=traffic&key=test&nlogs=1" 2>&1)
+if echo "$HTTP_CODE" | grep -qE "^[0-9]{3}$"; then
     echo "✓ Can reach Panorama (HTTP $HTTP_CODE)"
 else
     echo "✗ Cannot reach Panorama server"
@@ -68,9 +68,18 @@ echo ""
 
 echo "Step 5: Testing proxy endpoint..."
 sleep 2
-PROXY_TEST=$(curl -k -s -o /dev/null -w "%{http_code}" --max-time 10 "http://localhost/api/panorama?type=log&log-type=traffic&key=test&nlogs=1" 2>&1)
+echo "Testing with HTTPS (as browser would)..."
+PROXY_TEST=$(curl -k -s -o /dev/null -w "%{http_code}" --max-time 10 "https://localhost/api/panorama?type=log&log-type=traffic&key=test&nlogs=1" 2>&1)
 if [ "$PROXY_TEST" = "200" ] || [ "$PROXY_TEST" = "401" ] || [ "$PROXY_TEST" = "403" ]; then
     echo "✓ Proxy is working (HTTP $PROXY_TEST)"
+elif [ "$PROXY_TEST" = "301" ] || [ "$PROXY_TEST" = "302" ]; then
+    echo "⚠ Getting redirect (HTTP $PROXY_TEST)"
+    echo "Following redirect to see final response..."
+    FINAL_CODE=$(curl -k -s -o /dev/null -w "%{http_code}" -L --max-time 10 "https://localhost/api/panorama?type=log&log-type=traffic&key=test&nlogs=1" 2>&1)
+    echo "Final HTTP code after redirect: $FINAL_CODE"
+    if [ "$FINAL_CODE" = "200" ] || [ "$FINAL_CODE" = "401" ] || [ "$FINAL_CODE" = "403" ]; then
+        echo "✓ Proxy works after following redirect"
+    fi
 elif [ "$PROXY_TEST" = "502" ]; then
     echo "✗ Still getting 502 Bad Gateway"
     echo ""
