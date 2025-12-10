@@ -19,8 +19,26 @@ APP_DIR="/var/www/panovision"
 NGINX_CONF="/etc/nginx/conf.d/panovision.conf"
 
 echo "Step 1: Installing system dependencies..."
-if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then
-    dnf install -y nodejs npm
+
+NODE_VERSION_REQUIRED="18"
+if command -v node &> /dev/null; then
+    CURRENT_NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
+    if [ "$CURRENT_NODE_VERSION" -lt "$NODE_VERSION_REQUIRED" ]; then
+        echo "Node.js version $CURRENT_NODE_VERSION is too old. Installing Node.js 20.x from NodeSource..."
+        dnf remove -y nodejs npm 2>/dev/null || true
+        curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
+        dnf install -y nodejs
+    else
+        echo "Node.js version $CURRENT_NODE_VERSION is sufficient"
+    fi
+else
+    echo "Node.js not found. Installing Node.js 20.x from NodeSource..."
+    curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
+    dnf install -y nodejs
+fi
+
+if ! command -v nginx &> /dev/null; then
+    dnf install -y nginx
 fi
 
 if ! command -v nginx &> /dev/null; then
@@ -48,31 +66,38 @@ mkdir -p "$APP_DIR"
 chown -R "$APP_USER:$APP_USER" "$APP_DIR"
 
 echo ""
-echo "Step 4: Installing Node.js dependencies..."
-cd "$PROJECT_DIR"
-if [ ! -d "node_modules" ]; then
-    npm install
-else
-    npm install
-fi
-
-echo ""
-echo "Step 5: Building application..."
-npm run build
-
-if [ ! -d "$PROJECT_DIR/dist" ]; then
-    echo "Error: Build failed - dist directory not found"
+echo "Step 4: Verifying Node.js version..."
+NODE_VERSION=$(node -v)
+echo "Using Node.js: $NODE_VERSION"
+NODE_MAJOR=$(echo "$NODE_VERSION" | cut -d'v' -f2 | cut -d'.' -f1)
+if [ "$NODE_MAJOR" -lt "18" ]; then
+    echo "Error: Node.js 18+ is required for Vite 5. Current version: $NODE_VERSION"
     exit 1
 fi
 
 echo ""
-echo "Step 6: Deploying application files..."
+echo "Step 5: Installing Node.js dependencies..."
+cd "$PROJECT_DIR"
+npm install --legacy-peer-deps 2>/dev/null || npm install
+
+echo ""
+echo "Step 6: Building application..."
+npm run build
+
+if [ ! -d "$PROJECT_DIR/dist" ]; then
+    echo "Error: Build failed - dist directory not found"
+    echo "Checking for build errors..."
+    exit 1
+fi
+
+echo ""
+echo "Step 7: Deploying application files..."
 rsync -av --delete "$PROJECT_DIR/dist/" "$APP_DIR/" 2>/dev/null || cp -r "$PROJECT_DIR/dist/"* "$APP_DIR/"
 chown -R "$APP_USER:$APP_USER" "$APP_DIR"
 chmod -R 755 "$APP_DIR"
 
 echo ""
-echo "Step 7: Configuring Nginx..."
+echo "Step 8: Configuring Nginx..."
 cp "$SCRIPT_DIR/nginx-panovision.conf" "$NGINX_CONF"
 
 if [ ! -f "/etc/letsencrypt/live/panovision.officeours.com/fullchain.pem" ]; then
@@ -101,7 +126,7 @@ if [ ! -f "/etc/letsencrypt/live/panovision.officeours.com/fullchain.pem" ]; the
 fi
 
 echo ""
-echo "Step 8: Testing Nginx configuration..."
+echo "Step 9: Testing Nginx configuration..."
 if nginx -t 2>/dev/null; then
     echo "Nginx configuration is valid"
 else
@@ -109,7 +134,7 @@ else
 fi
 
 echo ""
-echo "Step 9: Configuring firewall..."
+echo "Step 10: Configuring firewall..."
 if systemctl is-active --quiet firewalld; then
     firewall-cmd --permanent --add-service=http 2>/dev/null || true
     firewall-cmd --permanent --add-service=https 2>/dev/null || true
@@ -120,7 +145,7 @@ else
 fi
 
 echo ""
-echo "Step 10: Enabling and starting services..."
+echo "Step 11: Enabling and starting services..."
 systemctl enable nginx 2>/dev/null || true
 systemctl restart nginx 2>/dev/null || systemctl start nginx
 

@@ -6,9 +6,17 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
   },
   server: {
     port: 3000,
     host: true
-  }
+  },
+  define: {
+    global: 'globalThis',
+  },
 });

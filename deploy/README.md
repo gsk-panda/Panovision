@@ -7,7 +7,7 @@ This guide provides instructions for deploying PanoVision on a RHEL 9.7 system u
 - RHEL 9.7 system with root/sudo access
 - DNS record configured for `panovision.officeours.com` pointing to the server IP
 - Ports 80 and 443 open in firewall
-- Node.js 18+ and npm (will be installed by script)
+- **Node.js 18+ required** (script will install Node.js 20.x from NodeSource)
 
 ## Quick Installation
 

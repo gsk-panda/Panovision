@@ -20,7 +20,26 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 echo "Step 1: Installing system dependencies..."
-dnf install -y nodejs npm nginx firewalld
+
+echo "Installing Node.js 20.x from NodeSource (required for Vite 5)..."
+if command -v node &> /dev/null; then
+    CURRENT_NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
+    if [ "$CURRENT_NODE_VERSION" -lt "18" ]; then
+        echo "Removing old Node.js version..."
+        dnf remove -y nodejs npm 2>/dev/null || true
+    fi
+fi
+
+curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
+dnf install -y nodejs
+
+if ! command -v nginx &> /dev/null; then
+    dnf install -y nginx
+fi
+
+if ! systemctl is-active --quiet firewalld 2>/dev/null; then
+    dnf install -y firewalld
+fi
 
 echo ""
 echo "Step 2: Creating application user..."
