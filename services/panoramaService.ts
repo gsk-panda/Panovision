@@ -97,8 +97,8 @@ const parsePaloAltoXML = (xmlString: string): TrafficLog[] => {
 const pollJob = async (serverUrl: string, apiKey: string, jobId: string): Promise<TrafficLog[]> => {
   const pollUrl = `${serverUrl}/api/?type=log&action=get&job-id=${jobId}&key=${encodeURIComponent(apiKey)}`;
   
-  for (let i = 0; i < 40; i++) {
-    await new Promise(r => setTimeout(r, 1000));
+  for (let i = 0; i < 60; i++) {
+    await new Promise(r => setTimeout(r, 2000));
     try {
       const resp = await fetch(pollUrl);
       if (!resp.ok) {
@@ -113,14 +113,28 @@ const pollJob = async (serverUrl: string, apiKey: string, jobId: string): Promis
       }
       
       const text = await resp.text();
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(text, 'text/xml');
       
-      if (text.includes('<status>FIN</status>')) {
-        return parsePaloAltoXML(text);
+      const statusElement = xmlDoc.getElementsByTagName('status')[0];
+      const status = statusElement?.textContent?.trim() || '';
+      
+      if (status === 'FIN' || text.includes('<status>FIN</status>')) {
+        const logs = parsePaloAltoXML(text);
+        if (logs.length === 0 && text.includes('<result>')) {
+          const resultElement = xmlDoc.getElementsByTagName('result')[0];
+          if (resultElement && resultElement.children.length === 0) {
+            return [];
+          }
+        }
+        return logs;
       }
       
-      if (text.includes('status="error"') || text.includes('<msg>')) {
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(text, 'text/xml');
+      if (status === 'ACT' || status === 'RUN' || text.includes('<status>ACT</status>') || text.includes('<status>RUN</status>')) {
+        continue;
+      }
+      
+      if (text.includes('status="error"') || status === 'ERROR' || text.includes('<status>ERROR</status>')) {
         const errorMsg = xmlDoc.getElementsByTagName('msg')[0]?.textContent || 'Unknown job error';
         const error: ApiError = {
           message: `Job failed: ${errorMsg}`,
@@ -130,6 +144,11 @@ const pollJob = async (serverUrl: string, apiKey: string, jobId: string): Promis
         };
         throw error;
       }
+      
+      if (text.includes('<entry>')) {
+        return parsePaloAltoXML(text);
+      }
+      
     } catch (e: any) {
       if (e.statusCode || e.message?.includes('Job')) {
         throw e;
@@ -138,7 +157,8 @@ const pollJob = async (serverUrl: string, apiKey: string, jobId: string): Promis
   }
   
   const timeoutError: ApiError = {
-    message: `Timeout polling job ${jobId} after 40 seconds`,
+    message: `Timeout polling job ${jobId} after 120 seconds`,
+    responseBody: 'Job did not complete within timeout period',
     url: pollUrl.replace(apiKey, '***REDACTED***'),
     timestamp: new Date().toISOString(),
   };
@@ -209,19 +229,21 @@ export const fetchLogs = async (params: SearchParams): Promise<TrafficLog[]> => 
     
     const xmlText = await response.text();
     
-    if (xmlText.includes('<job>')) {
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
-      const jobId = xmlDoc.getElementsByTagName('job')[0]?.textContent;
-      if (jobId) {
-        return await pollJob(PANORAMA_SERVER, PANORAMA_API_KEY, jobId);
-      }
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+    const jobElement = xmlDoc.getElementsByTagName('job')[0];
+    const jobId = jobElement?.textContent?.trim();
+    
+    if (jobId) {
+      console.log(`Job enqueued with ID: ${jobId}, starting polling...`);
+      return await pollJob(PANORAMA_SERVER, PANORAMA_API_KEY, jobId);
     }
     
+    const parser2 = new DOMParser();
+    const xmlDoc2 = parser2.parseFromString(xmlText, 'text/xml');
+    
     if (xmlText.includes('status="error"') || xmlText.includes('<msg>')) {
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
-      const errorMsg = xmlDoc.getElementsByTagName('msg')[0]?.textContent || 'Unknown API error';
+      const errorMsg = xmlDoc2.getElementsByTagName('msg')[0]?.textContent || 'Unknown API error';
       const error: ApiError = {
         message: `Panorama API error: ${errorMsg}`,
         statusCode: response.status,
@@ -232,7 +254,11 @@ export const fetchLogs = async (params: SearchParams): Promise<TrafficLog[]> => 
       throw error;
     }
     
-    return parsePaloAltoXML(xmlText);
+    if (xmlText.includes('<entry>')) {
+      return parsePaloAltoXML(xmlText);
+    }
+    
+    return [];
     
   } catch (error: any) {
     if (error.statusCode || error.message?.includes('Panorama')) {
