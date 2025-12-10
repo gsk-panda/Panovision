@@ -3,6 +3,13 @@ import { TrafficLog, SearchParams } from '../types';
 const PANORAMA_SERVER = 'https://panorama.officeours.com';
 const PANORAMA_API_KEY = 'LUFRPT0xQ0JKa2YrR1hFcVdra1pjL2Q2V2w0eXo0bmc9dzczNHg3T0VsRS9yYmFMcEpWdXBWdnF3cEQ2OTduSU9yRTlqQmJEbyt1bDY0NlR1VUhrNlkybGRRTHJ0Y2ZIdw==';
 
+const getApiBaseUrl = (): string => {
+  if (typeof window !== 'undefined') {
+    return '/api/panorama';
+  }
+  return `${PANORAMA_SERVER}/api`;
+};
+
 export interface ApiError {
   message: string;
   statusCode?: number;
@@ -94,8 +101,8 @@ const parsePaloAltoXML = (xmlString: string): TrafficLog[] => {
   return logs;
 };
 
-const pollJob = async (serverUrl: string, apiKey: string, jobId: string): Promise<TrafficLog[]> => {
-  const pollUrl = `${serverUrl}/api/?type=log&action=get&job-id=${jobId}&key=${encodeURIComponent(apiKey)}`;
+const pollJob = async (apiBaseUrl: string, apiKey: string, jobId: string): Promise<TrafficLog[]> => {
+  const pollUrl = `${apiBaseUrl}?type=log&action=get&job-id=${jobId}&key=${encodeURIComponent(apiKey)}`;
   
   for (let i = 0; i < 60; i++) {
     await new Promise(r => setTimeout(r, 2000));
@@ -204,7 +211,8 @@ export const fetchLogs = async (params: SearchParams): Promise<TrafficLog[]> => 
     urlParams.push(`time-range=${encodeURIComponent(timeRange)}`);
   }
   
-  const url = `${PANORAMA_SERVER}/api/?${urlParams.join('&')}`;
+  const apiBaseUrl = getApiBaseUrl();
+  const url = `${apiBaseUrl}?${urlParams.join('&')}`;
   
   try {
     const response = await fetch(url, {
@@ -236,7 +244,7 @@ export const fetchLogs = async (params: SearchParams): Promise<TrafficLog[]> => 
     
     if (jobId) {
       console.log(`Job enqueued with ID: ${jobId}, starting polling...`);
-      return await pollJob(PANORAMA_SERVER, PANORAMA_API_KEY, jobId);
+      return await pollJob(apiBaseUrl, PANORAMA_API_KEY, jobId);
     }
     
     const parser2 = new DOMParser();
