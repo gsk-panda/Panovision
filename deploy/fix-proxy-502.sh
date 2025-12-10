@@ -22,11 +22,12 @@ fi
 echo ""
 
 echo "Step 2: Testing connectivity to Panorama..."
-HTTP_CODE=$(curl -k -s -o /dev/null -w "%{http_code}" --connect-timeout 10 "https://panorama.officeours.com/api/?type=log&log-type=traffic&key=test&nlogs=1" 2>&1)
+TEST_URL="https://panorama.officeours.com/api/?type=log&log-type=traffic&key=test&nlogs=1"
+HTTP_CODE=$(curl -k -s -o /dev/null -w "%{http_code}" --connect-timeout 10 "$TEST_URL" 2>&1)
 if echo "$HTTP_CODE" | grep -qE "^[0-9]{3}$"; then
     echo "✓ Can reach Panorama (HTTP $HTTP_CODE)"
 else
-    echo "✗ Cannot reach Panorama server"
+    echo "✗ Cannot reach Panorama server (got: $HTTP_CODE)"
     echo "  Testing basic connectivity..."
     ping -c 2 panorama.officeours.com 2>/dev/null && echo "  Ping works" || echo "  Ping failed"
     echo ""
