@@ -38,22 +38,11 @@ The installation script will:
 
 ## SSL Certificate Setup
 
-### Option 1: Let's Encrypt (Recommended)
+The installation script automatically creates a self-signed SSL certificate. This will cause browser security warnings, which is expected for self-signed certificates. Users will need to accept the security warning to access the site.
 
-After DNS is configured and the server is accessible:
-
-```bash
-certbot --nginx -d panovision.officeours.com
-```
-
-This will automatically:
-- Obtain a free SSL certificate
-- Configure Nginx to use it
-- Set up automatic renewal
-
-### Option 2: Self-Signed Certificate (Development Only)
-
-The installation script creates a self-signed certificate if Let's Encrypt is not available. This is only suitable for testing and will show browser warnings.
+The certificate is stored at:
+- Certificate: `/etc/ssl/panovision/panovision-selfsigned.crt`
+- Private Key: `/etc/ssl/panovision/panovision-selfsigned.key`
 
 ## Manual Installation Steps
 
@@ -187,17 +176,7 @@ firewall-cmd --list-all
    tail -f /var/log/nginx/panovision-error.log
    ```
 
-2. **Check SSL certificate expiration:**
-   ```bash
-   certbot certificates
-   ```
-
-3. **Renew SSL certificates (automatic, but can be done manually):**
-   ```bash
-   certbot renew
-   ```
-
-4. **Backup application files:**
+2. **Backup application files:**
    ```bash
    tar -czf panovision-backup-$(date +%Y%m%d).tar.gz /var/www/panovision
    ```

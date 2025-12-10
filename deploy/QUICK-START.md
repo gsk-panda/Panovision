@@ -53,12 +53,7 @@ cd /path/to/New-Panovision && chmod +x deploy/deploy-package.sh && ./deploy/depl
 
 ## Post-Installation
 
-After deployment, get a proper SSL certificate:
-
-```bash
-dnf install -y certbot python3-certbot-nginx
-certbot --nginx -d panovision.officeours.com
-```
+The deployment script automatically creates a self-signed SSL certificate. The site will be accessible at `https://panovision.officeours.com`, but browsers will show a security warning for the self-signed certificate. This is expected behavior.
 
 ## Troubleshooting
 

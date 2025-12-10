@@ -78,32 +78,22 @@ echo ""
 echo "Step 7: Configuring Nginx..."
 cp "$SCRIPT_DIR/nginx-panovision.conf" "$NGINX_CONF"
 
-if [ ! -f "/etc/letsencrypt/live/panovision.officeours.com/fullchain.pem" ]; then
-    echo ""
-    echo "Warning: SSL certificate not found. Installing certbot..."
-    dnf install -y certbot python3-certbot-nginx
+echo ""
+echo "Setting up self-signed SSL certificate..."
+SSL_DIR="/etc/ssl/panovision"
+mkdir -p "$SSL_DIR"
+
+if [ ! -f "$SSL_DIR/panovision-selfsigned.crt" ]; then
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+        -keyout "$SSL_DIR/panovision-selfsigned.key" \
+        -out "$SSL_DIR/panovision-selfsigned.crt" \
+        -subj "/C=US/ST=State/L=City/O=Organization/CN=panovision.officeours.com" 2>/dev/null
     
-    echo ""
-    echo "=========================================="
-    echo "SSL Certificate Setup Required"
-    echo "=========================================="
-    echo "You need to obtain an SSL certificate for panovision.officeours.com"
-    echo "Run the following command after DNS is configured:"
-    echo ""
-    echo "  certbot --nginx -d panovision.officeours.com"
-    echo ""
-    echo "For now, the Nginx config will use a self-signed certificate."
-    echo "Updating Nginx config to use temporary self-signed cert..."
-    
-    if [ ! -f "/etc/ssl/certs/panovision-selfsigned.crt" ]; then
-        openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-            -keyout /etc/ssl/private/panovision-selfsigned.key \
-            -out /etc/ssl/certs/panovision-selfsigned.crt \
-            -subj "/CN=panovision.officeours.com"
-    fi
-    
-    sed -i 's|/etc/letsencrypt/live/panovision.officeours.com/fullchain.pem|/etc/ssl/certs/panovision-selfsigned.crt|g' "$NGINX_CONF"
-    sed -i 's|/etc/letsencrypt/live/panovision.officeours.com/privkey.pem|/etc/ssl/private/panovision-selfsigned.key|g' "$NGINX_CONF"
+    chmod 600 "$SSL_DIR/panovision-selfsigned.key"
+    chmod 644 "$SSL_DIR/panovision-selfsigned.crt"
+    echo "Self-signed certificate created"
+else
+    echo "Self-signed certificate already exists"
 fi
 
 echo ""
@@ -136,8 +126,7 @@ echo "Nginx config: $NGINX_CONF"
 echo ""
 echo "Next steps:"
 echo "1. Configure DNS to point panovision.officeours.com to this server"
-echo "2. If using Let's Encrypt, run: certbot --nginx -d panovision.officeours.com"
-echo "3. Verify the site is accessible at https://panovision.officeours.com"
+echo "2. Access: https://panovision.officeours.com (browser will warn about self-signed cert)"
 echo ""
 echo "To check Nginx status: systemctl status nginx"
 echo "To view logs: tail -f /var/log/nginx/panovision-error.log"
