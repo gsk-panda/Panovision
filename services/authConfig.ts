@@ -1,5 +1,10 @@
 import { Configuration, PopupRequest } from '@azure/msal-browser';
 
+export const isOidcEnabled = (): boolean => {
+  const envValue = import.meta.env.VITE_OIDC_ENABLED;
+  return envValue !== 'false' && envValue !== '0';
+};
+
 export const msalConfig: Configuration = {
   auth: {
     clientId: import.meta.env.VITE_AZURE_CLIENT_ID || '',

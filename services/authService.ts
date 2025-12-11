@@ -1,17 +1,28 @@
 import { PublicClientApplication, AccountInfo } from '@azure/msal-browser';
-import { msalConfig, loginRequest, graphConfig } from './authConfig';
+import { msalConfig, loginRequest, graphConfig, isOidcEnabled } from './authConfig';
 import { AuthUser } from '../types';
 
-export const msalInstance = new PublicClientApplication(msalConfig);
+let msalInstance: PublicClientApplication | null = null;
 
-await msalInstance.initialize();
+const initializeMsal = async () => {
+  if (isOidcEnabled() && !msalInstance) {
+    msalInstance = new PublicClientApplication(msalConfig);
+    await msalInstance.initialize();
+  }
+};
+
+initializeMsal();
 
 export const getCurrentAccount = (): AccountInfo | null => {
+  if (!msalInstance) return null;
   const accounts = msalInstance.getAllAccounts();
   return accounts.length > 0 ? accounts[0] : null;
 };
 
 export const login = async (): Promise<AccountInfo | null> => {
+  if (!msalInstance) {
+    throw new Error('OIDC authentication is disabled');
+  }
   try {
     const response = await msalInstance.loginPopup(loginRequest);
     return response.account;
@@ -24,6 +35,7 @@ export const login = async (): Promise<AccountInfo | null> => {
 };
 
 export const logout = async (): Promise<void> => {
+  if (!msalInstance) return;
   const account = getCurrentAccount();
   if (account) {
     await msalInstance.logoutPopup({ account });
@@ -31,6 +43,7 @@ export const logout = async (): Promise<void> => {
 };
 
 export const getUserInfo = async (): Promise<AuthUser | null> => {
+  if (!msalInstance) return null;
   const account = getCurrentAccount();
   if (!account) return null;
 
@@ -67,6 +80,7 @@ export const getUserInfo = async (): Promise<AuthUser | null> => {
 };
 
 export const handleRedirectPromise = async (): Promise<AccountInfo | null> => {
+  if (!msalInstance) return null;
   try {
     const response = await msalInstance.handleRedirectPromise();
     return response?.account || null;

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { TrafficLog, ColumnDef, SearchParams, AuthUser, LogStats } from './types';
 import { fetchLogs, ApiError } from './services/panoramaService';
 import { getCurrentAccount, getUserInfo, handleRedirectPromise, logout as msalLogout } from './services/authService';
+import { isOidcEnabled } from './services/authConfig';
 import SearchHeader from './components/SearchHeader';
 import ColumnCustomizer from './components/ColumnCustomizer';
 import StatsWidget from './components/StatsWidget';
@@ -87,13 +88,21 @@ function App() {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        await handleRedirectPromise();
-        const account = getCurrentAccount();
-        if (account) {
-          const userInfo = await getUserInfo();
-          if (userInfo) {
-            setUser(userInfo);
+        if (isOidcEnabled()) {
+          await handleRedirectPromise();
+          const account = getCurrentAccount();
+          if (account) {
+            const userInfo = await getUserInfo();
+            if (userInfo) {
+              setUser(userInfo);
+            }
           }
+        } else {
+          setUser({
+            id: 'anonymous',
+            name: 'Anonymous User',
+            email: 'anonymous@local',
+          });
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
@@ -227,16 +236,18 @@ function App() {
                 <div className="h-8 w-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 border border-slate-200">
                     <User className="h-4 w-4" />
                 </div>
-                <button 
-                  onClick={async () => {
-                    await msalLogout();
-                    setUser(null);
-                  }} 
-                  className="text-slate-400 hover:text-red-600 ml-2 transition-colors p-2 hover:bg-slate-50 rounded-md"
-                  title="Logout"
-                >
-                    <LogOut className="h-5 w-5" />
-                </button>
+                {isOidcEnabled() && (
+                  <button 
+                    onClick={async () => {
+                      await msalLogout();
+                      setUser(null);
+                    }} 
+                    className="text-slate-400 hover:text-red-600 ml-2 transition-colors p-2 hover:bg-slate-50 rounded-md"
+                    title="Logout"
+                  >
+                      <LogOut className="h-5 w-5" />
+                  </button>
+                )}
             </div>
          </div>
       </header>
