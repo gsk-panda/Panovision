@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { TrafficLog, ColumnDef, SearchParams, AuthUser, LogStats } from './types';
 import { fetchLogs, ApiError } from './services/panoramaService';
+import { getCurrentAccount, getUserInfo, handleRedirectPromise, logout as msalLogout } from './services/authService';
 import SearchHeader from './components/SearchHeader';
 import ColumnCustomizer from './components/ColumnCustomizer';
 import StatsWidget from './components/StatsWidget';
@@ -8,7 +9,7 @@ import LoginPage from './components/LoginPage';
 import LogDetailModal from './components/LogDetailModal';
 import ErrorDiagnosisModal from './components/ErrorDiagnosisModal';
 import Logo from './components/Logo';
-import { Settings, AlertCircle, LogOut, User, ArrowDown, ArrowUp, Search, GripVertical } from 'lucide-react';
+import { Settings, AlertCircle, LogOut, User, ArrowDown, ArrowUp, Search, GripVertical, Loader2 } from 'lucide-react';
 
 const INITIAL_COLUMNS: ColumnDef[] = [
   { id: 'receive_time', label: 'Receive Time', visible: true, width: 180 },
@@ -55,6 +56,7 @@ function calculateLocalStats(logs: TrafficLog[]): LogStats {
 function App() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [logs, setLogs] = useState<TrafficLog[]>([]);
+  const [isInitializing, setIsInitializing] = useState(true);
   
   // Load columns from local storage or default to INITIAL_COLUMNS
   const [columns, setColumns] = useState<ColumnDef[]>(() => {
@@ -81,6 +83,27 @@ function App() {
   const [draggedColId, setDraggedColId] = useState<string | null>(null);
   
   const tableContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        await handleRedirectPromise();
+        const account = getCurrentAccount();
+        if (account) {
+          const userInfo = await getUserInfo();
+          if (userInfo) {
+            setUser(userInfo);
+          }
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+
+    initializeAuth();
+  }, []);
 
   // Persist columns to local storage whenever they change
   useEffect(() => {
@@ -171,6 +194,17 @@ function App() {
 
   const stats = useMemo(() => calculateLocalStats(logs), [logs]);
 
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="animate-spin h-8 w-8 text-brand-500 mx-auto mb-4" />
+          <p className="text-slate-400">Initializing...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
     return <LoginPage onLoginSuccess={setUser} />;
   }
@@ -194,7 +228,10 @@ function App() {
                     <User className="h-4 w-4" />
                 </div>
                 <button 
-                  onClick={() => setUser(null)} 
+                  onClick={async () => {
+                    await msalLogout();
+                    setUser(null);
+                  }} 
                   className="text-slate-400 hover:text-red-600 ml-2 transition-colors p-2 hover:bg-slate-50 rounded-md"
                   title="Logout"
                 >

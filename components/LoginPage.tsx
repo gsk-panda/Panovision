@@ -1,26 +1,40 @@
 import React, { useState } from 'react';
 import { Loader2, Lock } from 'lucide-react';
 import Logo from './Logo';
+import { login, getUserInfo } from '../services/authService';
+import { AuthUser } from '../types';
 
 interface LoginPageProps {
-  onLoginSuccess: (user: any) => void;
+  onLoginSuccess: (user: AuthUser) => void;
 }
 
 const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setIsLoading(true);
-    // Simulate SAML Redirect flow
-    setTimeout(() => {
-        // Mock successful login
-        onLoginSuccess({
-            id: 'admin-user',
-            name: 'Security Analyst',
-            email: 'analyst@panorama.local'
-        });
+    setError(null);
+    
+    try {
+      const account = await login();
+      if (!account) {
         setIsLoading(false);
-    }, 1500);
+        return;
+      }
+
+      const userInfo = await getUserInfo();
+      if (userInfo) {
+        onLoginSuccess(userInfo);
+      } else {
+        setError('Failed to retrieve user information');
+        setIsLoading(false);
+      }
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError(err.message || 'Authentication failed. Please try again.');
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -40,12 +54,18 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
         
         <p className="text-slate-400 text-sm mt-2 mb-8">Secure Traffic Analysis Portal</p>
         
+        {error && (
+          <div className="mb-4 p-3 bg-red-950/50 border border-red-500/30 rounded-lg text-sm text-red-400">
+            {error}
+          </div>
+        )}
+        
         <button 
           onClick={handleLogin} 
           disabled={isLoading} 
           className="w-full flex justify-center items-center gap-3 px-4 py-3 bg-white text-slate-950 font-semibold rounded-lg hover:bg-slate-200 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
         >
-          {isLoading ? <Loader2 className="animate-spin h-5 w-5" /> : 'Sign in with SSO'}
+          {isLoading ? <Loader2 className="animate-spin h-5 w-5" /> : 'Sign in with Azure AD'}
         </button>
         
         <div className="mt-8 flex justify-center items-center gap-2 text-xs text-slate-500">
