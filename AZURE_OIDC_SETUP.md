@@ -43,12 +43,23 @@ This guide explains how to configure Azure Active Directory (Azure AD) OIDC auth
 
 ## Step 3: Configure Environment Variables
 
-Create a `.env` file in the project root:
+Create a `.env` file in the project root (or copy from `.env.example`):
 
 ```env
 VITE_AZURE_CLIENT_ID=your-client-id-here
 VITE_AZURE_AUTHORITY=https://login.microsoftonline.com/your-tenant-id
 VITE_AZURE_REDIRECT_URI=https://panovision.officeours.com
+
+# OIDC Feature Toggle
+# Set to 'false' or '0' to disable OIDC authentication
+# When disabled, the app will allow anonymous access
+# Default: enabled (true)
+VITE_OIDC_ENABLED=true
+```
+
+**To disable OIDC authentication**, set:
+```env
+VITE_OIDC_ENABLED=false
 ```
 
 **For production deployment**, set these as environment variables on your server or use a build-time configuration.

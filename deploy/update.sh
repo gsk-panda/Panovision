@@ -17,12 +17,29 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-echo "Step 1: Updating dependencies..."
+echo "Step 1: Verifying Node.js version..."
+if command -v node &> /dev/null; then
+    NODE_VERSION=$(node -v)
+    NODE_MAJOR_VERSION=$(echo "$NODE_VERSION" | cut -d'v' -f2 | cut -d'.' -f1)
+    echo "Using Node.js: $NODE_VERSION"
+    
+    if [ "$NODE_MAJOR_VERSION" -lt "18" ]; then
+        echo "Error: Node.js 18+ is required for Vite 5. Current version: $NODE_VERSION"
+        echo "Please run: ./deploy/fix-nodejs.sh"
+        exit 1
+    fi
+else
+    echo "Error: Node.js is not installed"
+    exit 1
+fi
+
+echo ""
+echo "Step 2: Updating dependencies..."
 cd "$PROJECT_DIR"
 npm install --production=false
 
 echo ""
-echo "Step 2: Building application..."
+echo "Step 3: Building application..."
 npm run build
 
 if [ ! -d "$PROJECT_DIR/dist" ]; then
@@ -31,7 +48,7 @@ if [ ! -d "$PROJECT_DIR/dist" ]; then
 fi
 
 echo ""
-echo "Step 3: Deploying updated files..."
+echo "Step 4: Deploying updated files..."
 rsync -av --delete "$PROJECT_DIR/dist/" "$APP_DIR/"
 
 NGINX_USER="nginx"
@@ -44,7 +61,7 @@ find "$APP_DIR" -type d -exec chmod 755 {} \;
 find "$APP_DIR" -type f -exec chmod 644 {} \;
 
 echo ""
-echo "Step 4: Reloading Nginx..."
+echo "Step 5: Reloading Nginx..."
 systemctl reload nginx
 
 echo ""

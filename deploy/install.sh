@@ -24,14 +24,29 @@ echo "Step 1: Installing system dependencies..."
 echo "Installing Node.js 20.x from NodeSource (required for Vite 5)..."
 if command -v node &> /dev/null; then
     CURRENT_NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
+    echo "Current Node.js version: $(node -v)"
     if [ "$CURRENT_NODE_VERSION" -lt "18" ]; then
         echo "Removing old Node.js version..."
         dnf remove -y nodejs npm 2>/dev/null || true
+        rm -f /usr/bin/node /usr/bin/npm /usr/local/bin/node /usr/local/bin/npm 2>/dev/null || true
     fi
 fi
 
+echo "Adding NodeSource repository..."
 curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
+
+echo "Installing Node.js 20.x..."
 dnf install -y nodejs
+
+echo "Verifying Node.js installation..."
+NODE_VERSION=$(node -v)
+NODE_MAJOR_VERSION=$(echo "$NODE_VERSION" | cut -d'v' -f2 | cut -d'.' -f1)
+echo "Installed Node.js version: $NODE_VERSION"
+
+if [ "$NODE_MAJOR_VERSION" -lt "18" ]; then
+    echo "Error: Node.js 18+ is required for Vite 5. Current version: $NODE_VERSION"
+    exit 1
+fi
 
 if ! command -v nginx &> /dev/null; then
     dnf install -y nginx
@@ -56,12 +71,24 @@ mkdir -p "$APP_DIR"
 chown -R "$APP_USER:$APP_USER" "$APP_DIR"
 
 echo ""
-echo "Step 4: Installing Node.js dependencies..."
+echo "Step 4: Verifying Node.js version before build..."
+NODE_VERSION=$(node -v)
+NODE_MAJOR_VERSION=$(echo "$NODE_VERSION" | cut -d'v' -f2 | cut -d'.' -f1)
+echo "Using Node.js: $NODE_VERSION"
+
+if [ "$NODE_MAJOR_VERSION" -lt "18" ]; then
+    echo "Error: Node.js 18+ is required for Vite 5. Current version: $NODE_VERSION"
+    echo "Please run: ./deploy/fix-nodejs.sh"
+    exit 1
+fi
+
+echo ""
+echo "Step 5: Installing Node.js dependencies..."
 cd "$PROJECT_DIR"
 npm install --production=false
 
 echo ""
-echo "Step 5: Building application..."
+echo "Step 6: Building application..."
 npm run build
 
 if [ ! -d "$PROJECT_DIR/dist" ]; then
@@ -70,7 +97,7 @@ if [ ! -d "$PROJECT_DIR/dist" ]; then
 fi
 
 echo ""
-echo "Step 6: Deploying application files..."
+echo "Step 7: Deploying application files..."
 rsync -av --delete "$PROJECT_DIR/dist/" "$APP_DIR/"
 
 NGINX_USER="nginx"
@@ -83,7 +110,7 @@ find "$APP_DIR" -type d -exec chmod 755 {} \;
 find "$APP_DIR" -type f -exec chmod 644 {} \;
 
 echo ""
-echo "Step 7: Configuring Nginx..."
+echo "Step 8: Configuring Nginx..."
 cp "$SCRIPT_DIR/nginx-panovision.conf" "$NGINX_CONF"
 
 echo ""
@@ -105,11 +132,11 @@ else
 fi
 
 echo ""
-echo "Step 8: Testing Nginx configuration..."
+echo "Step 9: Testing Nginx configuration..."
 nginx -t
 
 echo ""
-echo "Step 9: Configuring firewall..."
+echo "Step 10: Configuring firewall..."
 if systemctl is-active --quiet firewalld; then
     firewall-cmd --permanent --add-service=http
     firewall-cmd --permanent --add-service=https
@@ -120,7 +147,7 @@ else
 fi
 
 echo ""
-echo "Step 10: Enabling and starting services..."
+echo "Step 11: Enabling and starting services..."
 systemctl enable nginx
 systemctl restart nginx
 
