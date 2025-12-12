@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { TrafficLog, ColumnDef, SearchParams, AuthUser, LogStats } from './types';
-import { fetchLogs, ApiError } from './services/panoramaService';
+import { fetchLogs, buildApiUrl, ApiError } from './services/panoramaService';
 import { getCurrentAccount, getUserInfo, handleRedirectPromise, logout as msalLogout } from './services/authService';
 import { isOidcEnabled } from './services/authConfig';
 import SearchHeader from './components/SearchHeader';
@@ -9,6 +9,7 @@ import StatsWidget from './components/StatsWidget';
 import LoginPage from './components/LoginPage';
 import LogDetailModal from './components/LogDetailModal';
 import ErrorDiagnosisModal from './components/ErrorDiagnosisModal';
+import ApiUrlModal from './components/ApiUrlModal';
 import Logo from './components/Logo';
 import { Settings, AlertCircle, LogOut, User, ArrowDown, ArrowUp, Search, GripVertical, Loader2 } from 'lucide-react';
 
@@ -79,6 +80,7 @@ function App() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [selectedLog, setSelectedLog] = useState<TrafficLog | null>(null);
   const [apiError, setApiError] = useState<ApiError | null>(null);
+  const [apiUrl, setApiUrl] = useState<string | null>(null);
   
   // Drag and Drop state
   const [draggedColId, setDraggedColId] = useState<string | null>(null);
@@ -128,6 +130,10 @@ function App() {
     setIsSearching(true);
     setLogs([]);
     setApiError(null);
+    
+    const url = buildApiUrl(params);
+    setApiUrl(url);
+    
     try {
       const data = await fetchLogs(params);
       setLogs(data);
@@ -434,6 +440,13 @@ function App() {
         <ErrorDiagnosisModal 
             error={apiError} 
             onClose={() => setApiError(null)} 
+        />
+      )}
+
+      {apiUrl && (
+        <ApiUrlModal 
+            url={apiUrl} 
+            onClose={() => setApiUrl(null)} 
         />
       )}
     </div>

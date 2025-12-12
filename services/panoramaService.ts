@@ -189,7 +189,7 @@ const buildTimeRange = (params: SearchParams): string => {
   return timeRanges[params.timeRange] || 'last-15-minutes';
 };
 
-export const fetchLogs = async (params: SearchParams): Promise<TrafficLog[]> => {
+export const buildApiUrl = (params: SearchParams): string => {
   const query = buildPaloAltoQuery(params);
   const val = Number(params.limit);
   const limitVal = isNaN(val) ? 50 : val;
@@ -212,7 +212,12 @@ export const fetchLogs = async (params: SearchParams): Promise<TrafficLog[]> => 
   }
   
   const apiBaseUrl = getApiBaseUrl();
-  const url = `${apiBaseUrl}?${urlParams.join('&')}`;
+  return `${apiBaseUrl}?${urlParams.join('&')}`;
+};
+
+export const fetchLogs = async (params: SearchParams): Promise<TrafficLog[]> => {
+  const url = buildApiUrl(params);
+  const apiBaseUrl = getApiBaseUrl();
   
   try {
     const response = await fetch(url, {
