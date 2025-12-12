@@ -6,7 +6,6 @@ interface ImportMetaEnv {
   readonly VITE_AZURE_AUTHORITY?: string;
   readonly VITE_AZURE_REDIRECT_URI?: string;
   readonly VITE_PANORAMA_SERVER?: string;
-  readonly VITE_PANORAMA_API_KEY?: string;
 }
 
 interface ImportMeta {

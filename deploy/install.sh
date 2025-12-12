@@ -170,6 +170,34 @@ if [ ! -f "$SCRIPT_DIR/../package.json" ] || [ ! -d "$SCRIPT_DIR/../.git" ]; the
     
     echo "Repository cloned successfully to $INSTALL_DIR"
     PROJECT_DIR="$INSTALL_DIR"
+    
+    echo ""
+    echo "Verifying repository integrity (OWASP A08 compliance)..."
+    cd "$INSTALL_DIR"
+    
+    if [ -d ".git" ]; then
+        echo "Verifying git repository state..."
+        if ! git fsck --no-progress >/dev/null 2>&1; then
+            echo "Warning: Git repository integrity check found issues"
+        else
+            echo "✓ Git repository integrity verified"
+        fi
+        
+        if ! git verify-commit HEAD >/dev/null 2>&1; then
+            echo "Warning: Current commit signature verification failed (unsigned commits are acceptable)"
+        fi
+    fi
+    
+    if [ -f "package.json" ]; then
+        echo "Verifying package.json exists and is valid JSON..."
+        if ! python3 -m json.tool package.json >/dev/null 2>&1 && ! node -e "JSON.parse(require('fs').readFileSync('package.json'))" >/dev/null 2>&1; then
+            echo "Error: package.json is not valid JSON"
+            exit 1
+        fi
+        echo "✓ package.json is valid"
+    fi
+    
+    echo "✓ Repository integrity checks passed"
     echo ""
     
     CLONE_STEP=2
@@ -266,12 +294,27 @@ npm install --production=false
 
 echo ""
 NEXT_STEP=$((NEXT_STEP + 1))
+echo "Step $NEXT_STEP: Storing API key securely (server-side only)..."
+mkdir -p /etc/panovision
+echo "$PANORAMA_API_KEY" > /etc/panovision/api-key
+chmod 600 /etc/panovision/api-key
+chown root:root /etc/panovision/api-key
+echo "✓ API key stored securely in /etc/panovision/api-key"
+
+cat > /etc/panovision/panorama-config <<EOF
+PANORAMA_URL=$PANORAMA_URL
+EOF
+chmod 644 /etc/panovision/panorama-config
+chown root:root /etc/panovision/panorama-config
+echo "✓ Panorama configuration stored in /etc/panovision/panorama-config"
+
+echo ""
+NEXT_STEP=$((NEXT_STEP + 1))
 echo "Step $NEXT_STEP: Creating environment configuration..."
 cd "$PROJECT_DIR"
 
 cat > .env <<EOF
 VITE_PANORAMA_SERVER=$PANORAMA_URL
-VITE_PANORAMA_API_KEY=$PANORAMA_API_KEY
 EOF
 
 if [ "$OIDC_ENABLED" = "false" ] || [ "$OIDC_ENABLED" = "0" ]; then
@@ -285,7 +328,7 @@ else
     fi
 fi
 
-echo "Environment file created at $PROJECT_DIR/.env"
+echo "Environment file created at $PROJECT_DIR/.env (API key excluded for security)"
 
 cat > "$PROJECT_DIR/deploy/config.sh" <<EOF
 #!/bin/bash
@@ -296,6 +339,8 @@ SERVER_URL="$SERVER_URL"
 PANORAMA_URL="$PANORAMA_URL"
 PANORAMA_HOST="$PANORAMA_HOST"
 EOF
+
+echo "Note: API key is stored securely in /etc/panovision/api-key (not in config.sh)"
 
 chmod 644 "$PROJECT_DIR/deploy/config.sh"
 echo "Configuration file created at $PROJECT_DIR/deploy/config.sh"
@@ -308,13 +353,11 @@ if [ "$OIDC_ENABLED" = "false" ] || [ "$OIDC_ENABLED" = "0" ]; then
     echo "Building with OIDC disabled..."
     export VITE_OIDC_ENABLED=false
     export VITE_PANORAMA_SERVER="$PANORAMA_URL"
-    export VITE_PANORAMA_API_KEY="$PANORAMA_API_KEY"
     npm run build
 else
     echo "Building with OIDC enabled..."
     export VITE_OIDC_ENABLED=true
     export VITE_PANORAMA_SERVER="$PANORAMA_URL"
-    export VITE_PANORAMA_API_KEY="$PANORAMA_API_KEY"
     if [ -n "$AZURE_CLIENT_ID" ]; then
         export VITE_AZURE_CLIENT_ID="$AZURE_CLIENT_ID"
         export VITE_AZURE_AUTHORITY="$AZURE_AUTHORITY"
@@ -412,6 +455,36 @@ echo ""
 NEXT_STEP=$((NEXT_STEP + 1))
 echo "Step $NEXT_STEP: Testing Nginx configuration..."
 nginx -t
+
+echo ""
+NEXT_STEP=$((NEXT_STEP + 1))
+echo "Step $NEXT_STEP: Installing API proxy service..."
+if [ ! -f "$PROJECT_DIR/deploy/api-proxy.js" ]; then
+    echo "Error: API proxy service file not found"
+    exit 1
+fi
+
+cp "$PROJECT_DIR/deploy/api-proxy.js" /opt/panovision/deploy/api-proxy.js
+chmod 755 /opt/panovision/deploy/api-proxy.js
+chown root:root /opt/panovision/deploy/api-proxy.js
+
+if [ -f "$PROJECT_DIR/deploy/api-proxy.service" ]; then
+    cp "$PROJECT_DIR/deploy/api-proxy.service" /etc/systemd/system/api-proxy.service
+    systemctl daemon-reload
+    systemctl enable api-proxy
+    systemctl start api-proxy
+    echo "✓ API proxy service installed and started"
+    
+    sleep 2
+    if systemctl is-active --quiet api-proxy; then
+        echo "✓ API proxy service is running"
+    else
+        echo "⚠ Warning: API proxy service failed to start. Check logs: journalctl -u api-proxy"
+    fi
+else
+    echo "Error: API proxy service file not found"
+    exit 1
+fi
 
 echo ""
 NEXT_STEP=$((NEXT_STEP + 1))

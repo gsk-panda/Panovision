@@ -1,13 +1,10 @@
 import { TrafficLog, SearchParams } from '../types';
 
-const PANORAMA_SERVER = import.meta.env.VITE_PANORAMA_SERVER || '';
-const PANORAMA_API_KEY = import.meta.env.VITE_PANORAMA_API_KEY || '';
-
 const getApiBaseUrl = (): string => {
   if (typeof window !== 'undefined') {
     return '/api/panorama';
   }
-  return `${PANORAMA_SERVER}/api`;
+  return '/api/panorama';
 };
 
 export interface ApiError {
@@ -100,8 +97,8 @@ const parsePaloAltoXML = (xmlString: string): TrafficLog[] => {
   return logs;
 };
 
-const pollJob = async (apiBaseUrl: string, apiKey: string, jobId: string): Promise<TrafficLog[]> => {
-  const pollUrl = `${apiBaseUrl}?type=log&action=get&job-id=${jobId}&key=${encodeURIComponent(apiKey)}`;
+const pollJob = async (apiBaseUrl: string, jobId: string): Promise<TrafficLog[]> => {
+  const pollUrl = `${apiBaseUrl}?type=log&action=get&job-id=${jobId}`;
   
   for (let i = 0; i < 60; i++) {
     await new Promise(r => setTimeout(r, 2000));
@@ -112,7 +109,7 @@ const pollJob = async (apiBaseUrl: string, apiKey: string, jobId: string): Promi
           message: `Job polling failed: ${resp.status} ${resp.statusText}`,
           statusCode: resp.status,
           statusText: resp.statusText,
-          url: pollUrl.replace(apiKey, '***REDACTED***'),
+          url: pollUrl,
           timestamp: new Date().toISOString(),
         };
         throw error;
@@ -145,7 +142,7 @@ const pollJob = async (apiBaseUrl: string, apiKey: string, jobId: string): Promi
         const error: ApiError = {
           message: `Job failed: ${errorMsg}`,
           responseBody: text,
-          url: pollUrl.replace(apiKey, '***REDACTED***'),
+          url: pollUrl,
           timestamp: new Date().toISOString(),
         };
         throw error;
@@ -165,7 +162,7 @@ const pollJob = async (apiBaseUrl: string, apiKey: string, jobId: string): Promi
   const timeoutError: ApiError = {
     message: `Timeout polling job ${jobId} after 120 seconds`,
     responseBody: 'Job did not complete within timeout period',
-    url: pollUrl.replace(apiKey, '***REDACTED***'),
+    url: pollUrl,
     timestamp: new Date().toISOString(),
   };
   throw timeoutError;
@@ -201,7 +198,6 @@ export const buildApiUrl = (params: SearchParams): string => {
   const urlParams: string[] = [
     `type=log`,
     `log-type=traffic`,
-    `key=${encodeURIComponent(PANORAMA_API_KEY)}`,
     `nlogs=${limit}`,
   ];
   
@@ -236,7 +232,7 @@ export const fetchLogs = async (params: SearchParams): Promise<TrafficLog[]> => 
         statusCode: response.status,
         statusText: response.statusText,
         responseBody: responseText,
-        url: url.replace(PANORAMA_API_KEY, '***REDACTED***'),
+        url: url,
         timestamp: new Date().toISOString(),
       };
       throw error;
@@ -251,7 +247,7 @@ export const fetchLogs = async (params: SearchParams): Promise<TrafficLog[]> => 
     
     if (jobId) {
       console.log(`Job enqueued with ID: ${jobId}, starting polling...`);
-      return await pollJob(apiBaseUrl, PANORAMA_API_KEY, jobId);
+      return await pollJob(apiBaseUrl, jobId);
     }
     
     const parser2 = new DOMParser();
@@ -263,7 +259,7 @@ export const fetchLogs = async (params: SearchParams): Promise<TrafficLog[]> => 
         message: `Panorama API error: ${errorMsg}`,
         statusCode: response.status,
         responseBody: xmlText,
-        url: url.replace(PANORAMA_API_KEY, '***REDACTED***'),
+        url: url,
         timestamp: new Date().toISOString(),
       };
       throw error;
@@ -283,7 +279,7 @@ export const fetchLogs = async (params: SearchParams): Promise<TrafficLog[]> => 
     const apiError: ApiError = {
       message: error.message || 'Network error connecting to Panorama',
       responseBody: error.toString(),
-      url: url.replace(PANORAMA_API_KEY, '***REDACTED***'),
+      url: url,
       timestamp: new Date().toISOString(),
     };
     throw apiError;
