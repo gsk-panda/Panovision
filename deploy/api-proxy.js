@@ -1,8 +1,8 @@
-const http = require('http');
-const https = require('https');
-const fs = require('fs');
-const { URL } = require('url');
-const crypto = require('crypto');
+import http from 'http';
+import https from 'https';
+import fs from 'fs';
+import { URL } from 'url';
+import crypto from 'crypto';
 
 const API_KEY_FILE = '/etc/panovision/api-key';
 const PANORAMA_CONFIG_FILE = '/etc/panovision/panorama-config';
