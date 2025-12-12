@@ -19,9 +19,11 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-echo "Step 1: Installing system dependencies..."
+echo "Step 1: Updating system packages..."
+dnf update -y
 
-echo "Installing Node.js 20.x from NodeSource (required for Vite 5)..."
+echo ""
+echo "Step 2: Installing Node.js (latest LTS from NodeSource, required for Vite 5)..."
 if command -v node &> /dev/null; then
     CURRENT_NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
     echo "Current Node.js version: $(node -v)"
@@ -32,10 +34,10 @@ if command -v node &> /dev/null; then
     fi
 fi
 
-echo "Adding NodeSource repository..."
-curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
+echo "Adding NodeSource repository for latest LTS..."
+curl -fsSL https://rpm.nodesource.com/setup_lts.x | bash -
 
-echo "Installing Node.js 20.x..."
+echo "Installing latest Node.js LTS..."
 dnf install -y nodejs
 
 echo "Verifying Node.js installation..."
@@ -48,16 +50,28 @@ if [ "$NODE_MAJOR_VERSION" -lt "18" ]; then
     exit 1
 fi
 
+echo ""
+echo "Step 3: Installing Nginx (latest version)..."
 if ! command -v nginx &> /dev/null; then
+    dnf install -y nginx
+else
+    echo "Nginx already installed, ensuring latest version..."
     dnf install -y nginx
 fi
 
+NGINX_VERSION=$(nginx -v 2>&1 | cut -d'/' -f2)
+echo "Installed Nginx version: $NGINX_VERSION"
+
+echo ""
+echo "Step 4: Installing Firewalld (if needed)..."
 if ! systemctl is-active --quiet firewalld 2>/dev/null; then
     dnf install -y firewalld
+    systemctl enable firewalld
+    systemctl start firewalld
 fi
 
 echo ""
-echo "Step 2: Creating application user..."
+echo "Step 5: Creating application user..."
 if ! id "$APP_USER" &>/dev/null; then
     useradd -r -s /bin/false -d "$APP_DIR" "$APP_USER"
     echo "Created user: $APP_USER"
@@ -66,12 +80,12 @@ else
 fi
 
 echo ""
-echo "Step 3: Creating application directory..."
+echo "Step 6: Creating application directory..."
 mkdir -p "$APP_DIR"
 chown -R "$APP_USER:$APP_USER" "$APP_DIR"
 
 echo ""
-echo "Step 4: Verifying Node.js version before build..."
+echo "Step 7: Verifying Node.js version before build..."
 NODE_VERSION=$(node -v)
 NODE_MAJOR_VERSION=$(echo "$NODE_VERSION" | cut -d'v' -f2 | cut -d'.' -f1)
 echo "Using Node.js: $NODE_VERSION"
@@ -83,12 +97,12 @@ if [ "$NODE_MAJOR_VERSION" -lt "18" ]; then
 fi
 
 echo ""
-echo "Step 5: Installing Node.js dependencies..."
+echo "Step 8: Installing Node.js dependencies..."
 cd "$PROJECT_DIR"
 npm install --production=false
 
 echo ""
-echo "Step 6: Building application..."
+echo "Step 9: Building application..."
 npm run build
 
 if [ ! -d "$PROJECT_DIR/dist" ]; then
@@ -97,20 +111,52 @@ if [ ! -d "$PROJECT_DIR/dist" ]; then
 fi
 
 echo ""
-echo "Step 7: Deploying application files..."
+echo "Step 10: Deploying application files..."
 rsync -av --delete "$PROJECT_DIR/dist/" "$APP_DIR/"
 
+echo ""
+echo "Step 11: Setting file permissions and ownership..."
 NGINX_USER="nginx"
 if ! id "$NGINX_USER" &>/dev/null; then
     NGINX_USER="www-data"
+    if ! id "$NGINX_USER" &>/dev/null; then
+        echo "Warning: Could not find nginx or www-data user, using panovision user"
+        NGINX_USER="$APP_USER"
+    fi
 fi
 
+echo "Using Nginx user: $NGINX_USER"
 chown -R "$NGINX_USER:$NGINX_USER" "$APP_DIR"
 find "$APP_DIR" -type d -exec chmod 755 {} \;
 find "$APP_DIR" -type f -exec chmod 644 {} \;
 
 echo ""
-echo "Step 8: Configuring Nginx..."
+echo "Step 12: Configuring SELinux (if enabled)..."
+if command -v getenforce &>/dev/null; then
+    SELINUX_STATUS=$(getenforce)
+    echo "SELinux status: $SELINUX_STATUS"
+    
+    if [ "$SELINUX_STATUS" != "Disabled" ]; then
+        echo "Setting SELinux context for web content..."
+        chcon -R -t httpd_sys_content_t "$APP_DIR" 2>/dev/null || echo "SELinux context update skipped"
+        
+        echo "Setting SELinux boolean to allow Nginx network connections..."
+        setsebool -P httpd_can_network_connect 1
+        
+        if getsebool httpd_can_network_connect | grep -q "on$"; then
+            echo "✓ SELinux boolean set successfully"
+        else
+            echo "⚠ Warning: Failed to set SELinux boolean"
+        fi
+    else
+        echo "SELinux is disabled, skipping SELinux configuration"
+    fi
+else
+    echo "SELinux tools not found, skipping SELinux configuration"
+fi
+
+echo ""
+echo "Step 13: Configuring Nginx..."
 cp "$SCRIPT_DIR/nginx-panovision.conf" "$NGINX_CONF"
 
 echo ""
@@ -132,11 +178,11 @@ else
 fi
 
 echo ""
-echo "Step 9: Testing Nginx configuration..."
+echo "Step 14: Testing Nginx configuration..."
 nginx -t
 
 echo ""
-echo "Step 10: Configuring firewall..."
+echo "Step 15: Configuring firewall..."
 if systemctl is-active --quiet firewalld; then
     firewall-cmd --permanent --add-service=http
     firewall-cmd --permanent --add-service=https
@@ -147,7 +193,7 @@ else
 fi
 
 echo ""
-echo "Step 11: Enabling and starting services..."
+echo "Step 16: Enabling and starting services..."
 systemctl enable nginx
 systemctl restart nginx
 
