@@ -176,12 +176,15 @@ const buildTimeRange = (params: SearchParams): string => {
   if (params.timeRange === 'custom' && params.startTime && params.endTime) {
     const start = new Date(params.startTime).toISOString().replace(/[-:]/g, '').split('.')[0];
     const end = new Date(params.endTime).toISOString().replace(/[-:]/g, '').split('.')[0];
+    if (!start || !end || start === 'Invalid Date' || end === 'Invalid Date') {
+      return 'last-15-minutes';
+    }
     return `${start}-${end}`;
   }
   
   const timeRanges: Record<string, string> = {
     'last-15-minutes': 'last-15-minutes',
-    'last-60-minutes': 'last-60-minutes',
+    'last-hour': 'last-hour',
     'last-6-hrs': 'last-6-hours',
     'last-24-hrs': 'last-24-hours',
   };

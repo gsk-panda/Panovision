@@ -220,7 +220,7 @@ const SearchHeader: React.FC<Props> = ({ onSearch, isSearching }) => {
                 className="block w-full px-3 py-2 text-sm border border-slate-700 rounded-md bg-slate-950 text-slate-200 focus:ring-1 focus:ring-brand-500 focus:border-brand-500 outline-none"
               >
                 <option value="last-15-minutes">Last 15 Mins</option>
-                <option value="last-60-minutes">Last 60 Mins</option>
+                <option value="last-hour">Last Hour</option>
                 <option value="last-6-hrs">Last 6 Hours</option>
                 <option value="last-24-hrs">Last 24 Hours</option>
                 <option value="custom">Custom Range</option>
