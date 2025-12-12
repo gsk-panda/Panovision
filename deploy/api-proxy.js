@@ -37,7 +37,9 @@ function loadConfig() {
     }
   } catch (error) {
     console.error('Error loading config:', error);
-    process.exit(1);
+    console.error('Stack trace:', error.stack);
+    // Don't exit immediately - let systemd handle restart
+    // process.exit(1);
   }
 }
 
