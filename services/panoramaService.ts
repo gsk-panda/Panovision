@@ -21,9 +21,6 @@ export interface ApiError {
 
 const buildPaloAltoQuery = (params: SearchParams): string => {
   const parts: string[] = [];
-  
-  // Enforce showing only logs with subtype 'end'
-  parts.push(`(subtype eq 'end')`);
 
   if (params.srcIp) {
       const op = params.isNotSrcIp ? 'neq' : 'eq';
