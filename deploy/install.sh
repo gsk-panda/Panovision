@@ -468,9 +468,11 @@ if [ ! -f "$PROJECT_DIR/deploy/api-proxy.js" ]; then
     exit 1
 fi
 
-cp "$PROJECT_DIR/deploy/api-proxy.js" /opt/panovision/deploy/api-proxy.js
-chmod 755 /opt/panovision/deploy/api-proxy.js
-chown root:root /opt/panovision/deploy/api-proxy.js
+# Ensure deploy directory exists
+mkdir -p "$PROJECT_DIR/deploy"
+cp "$PROJECT_DIR/deploy/api-proxy.js" "$PROJECT_DIR/deploy/api-proxy.js"
+chmod 755 "$PROJECT_DIR/deploy/api-proxy.js"
+chown root:root "$PROJECT_DIR/deploy/api-proxy.js"
 
 if [ -f "$PROJECT_DIR/deploy/api-proxy.service" ]; then
     cp "$PROJECT_DIR/deploy/api-proxy.service" /etc/systemd/system/api-proxy.service
