@@ -56,7 +56,7 @@ echo ""
 
 echo "Step 5: Testing API proxy service..."
 if systemctl is-active --quiet api-proxy; then
-    TEST_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3001/api/panorama?type=log&log-type=traffic&nlogs=1 2>&1)
+    TEST_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3001/api?type=log&log-type=traffic&nlogs=1 2>&1)
     if [ "$TEST_RESPONSE" = "200" ] || [ "$TEST_RESPONSE" = "401" ] || [ "$TEST_RESPONSE" = "403" ]; then
         echo "✓ API proxy is responding (HTTP $TEST_RESPONSE)"
     else
@@ -91,6 +91,6 @@ echo ""
 echo "If issues persist, check:"
 echo "  - Service logs: journalctl -u api-proxy -f"
 echo "  - Nginx error logs: tail -f /var/log/nginx/panovision-error.log"
-echo "  - Test proxy: curl http://127.0.0.1:3001/api/panorama?type=log&log-type=traffic&nlogs=1"
+echo "  - Test proxy: curl http://127.0.0.1:3001/api?type=log&log-type=traffic&nlogs=1"
 echo ""
 
