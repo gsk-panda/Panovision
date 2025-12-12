@@ -14,6 +14,11 @@ function loadConfig() {
   try {
     if (fs.existsSync(API_KEY_FILE)) {
       apiKey = fs.readFileSync(API_KEY_FILE, 'utf8').trim();
+      if (!apiKey) {
+        console.error('Warning: API key file exists but is empty');
+      }
+    } else {
+      console.error(`Error: API key file not found at ${API_KEY_FILE}`);
     }
     if (fs.existsSync(PANORAMA_CONFIG_FILE)) {
       const config = fs.readFileSync(PANORAMA_CONFIG_FILE, 'utf8');
@@ -21,9 +26,12 @@ function loadConfig() {
       if (urlMatch) {
         panoramaUrl = urlMatch[1].trim();
       }
+    } else {
+      console.error(`Warning: Panorama config file not found at ${PANORAMA_CONFIG_FILE}`);
     }
   } catch (error) {
     console.error('Error loading config:', error);
+    process.exit(1);
   }
 }
 
@@ -90,8 +98,14 @@ const server = http.createServer((req, res) => {
 });
 
 const PORT = 3001;
-server.listen(PORT, '127.0.0.1', () => {
+server.listen(PORT, '127.0.0.1', (err) => {
+  if (err) {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  }
   console.log(`API Proxy server running on http://127.0.0.1:${PORT}`);
+  console.log(`Panorama URL: ${panoramaUrl}`);
+  console.log(`API key loaded: ${apiKey ? 'Yes' : 'No'}`);
 });
 
 process.on('SIGTERM', () => {

@@ -297,9 +297,9 @@ NEXT_STEP=$((NEXT_STEP + 1))
 echo "Step $NEXT_STEP: Storing API key securely (server-side only)..."
 mkdir -p /etc/panovision
 echo "$PANORAMA_API_KEY" > /etc/panovision/api-key
-chmod 600 /etc/panovision/api-key
-chown root:root /etc/panovision/api-key
-echo "✓ API key stored securely in /etc/panovision/api-key"
+chmod 640 /etc/panovision/api-key
+chown root:nginx /etc/panovision/api-key
+echo "✓ API key stored securely in /etc/panovision/api-key (readable by nginx user)"
 
 cat > /etc/panovision/panorama-config <<EOF
 PANORAMA_URL=$PANORAMA_URL
