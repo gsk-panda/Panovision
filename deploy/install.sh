@@ -4,6 +4,44 @@ set -e
 
 GITHUB_REPO="https://github.com/gsk-panda/New-Panovision.git"
 INSTALL_DIR="/opt/New-Panovision"
+OIDC_ENABLED="true"
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --disable-oidc|--no-oidc)
+            OIDC_ENABLED="false"
+            shift
+            ;;
+        --enable-oidc)
+            OIDC_ENABLED="true"
+            shift
+            ;;
+        -h|--help)
+            echo "PanoVision Installation Script"
+            echo ""
+            echo "Usage: $0 [OPTIONS]"
+            echo ""
+            echo "Options:"
+            echo "  --disable-oidc, --no-oidc    Disable OIDC authentication (allows anonymous access)"
+            echo "  --enable-oidc                Enable OIDC authentication (default)"
+            echo "  -h, --help                   Show this help message"
+            echo ""
+            echo "Environment Variables:"
+            echo "  VITE_OIDC_ENABLED           Set to 'false' to disable OIDC (overrides --disable-oidc)"
+            echo ""
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Use --help for usage information"
+            exit 1
+            ;;
+    esac
+done
+
+if [ -n "$VITE_OIDC_ENABLED" ]; then
+    OIDC_ENABLED="$VITE_OIDC_ENABLED"
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -29,6 +67,13 @@ if [ "$EUID" -ne 0 ]; then
     echo "Error: This script must be run as root"
     exit 1
 fi
+
+if [ "$OIDC_ENABLED" = "false" ] || [ "$OIDC_ENABLED" = "0" ]; then
+    echo "OIDC Authentication: DISABLED (anonymous access enabled)"
+else
+    echo "OIDC Authentication: ENABLED (default)"
+fi
+echo ""
 
 echo "Step 1: Updating system packages..."
 dnf update -y
@@ -154,7 +199,15 @@ npm install --production=false
 echo ""
 NEXT_STEP=$((NEXT_STEP + 1))
 echo "Step $NEXT_STEP: Building application..."
-npm run build
+
+if [ "$OIDC_ENABLED" = "false" ] || [ "$OIDC_ENABLED" = "0" ]; then
+    echo "Setting VITE_OIDC_ENABLED=false for build..."
+    export VITE_OIDC_ENABLED=false
+    npm run build
+else
+    echo "Building with OIDC enabled (default)..."
+    npm run build
+fi
 
 if [ ! -d "$PROJECT_DIR/dist" ]; then
     echo "Error: Build failed - dist directory not found"
@@ -268,6 +321,11 @@ echo ""
 echo "Application deployed to: $APP_DIR"
 echo "Nginx config: $NGINX_CONF"
 echo "Project directory: $PROJECT_DIR"
+if [ "$OIDC_ENABLED" = "false" ] || [ "$OIDC_ENABLED" = "0" ]; then
+    echo "OIDC Authentication: DISABLED (anonymous access)"
+else
+    echo "OIDC Authentication: ENABLED"
+fi
 echo ""
 echo "Next steps:"
 echo "1. Configure DNS to point panovision.officeours.com to this server"
@@ -280,5 +338,11 @@ echo "To update the application:"
 echo "  cd $PROJECT_DIR"
 echo "  git pull"
 echo "  ./deploy/update.sh"
+echo ""
+echo "To change OIDC setting, rebuild with:"
+echo "  cd $PROJECT_DIR"
+echo "  VITE_OIDC_ENABLED=false npm run build"
+echo "  rsync -av --delete dist/ $APP_DIR/"
+echo "  systemctl reload nginx"
 echo ""
 
