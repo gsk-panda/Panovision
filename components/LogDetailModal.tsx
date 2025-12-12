@@ -76,7 +76,7 @@ const LogDetailModal: React.FC<Props> = ({ log, onClose }) => {
                             <DetailRow label="Source Port" value={log.src_port} isMono />
                             <DetailRow label="Source Zone" value={log.src_zone} />
                         </div>
-                         <DetailRow label="Ingress Interface" value={log.ingress_interface} isMono />
+                         <DetailRow label="Ingress Interface" value={log.ingress_interface || 'N/A'} isMono />
                     </div>
                 </div>
 
@@ -89,7 +89,7 @@ const LogDetailModal: React.FC<Props> = ({ log, onClose }) => {
                             <DetailRow label="Dest Port" value={log.dst_port} isMono />
                             <DetailRow label="Dest Zone" value={log.dst_zone} />
                         </div>
-                        <DetailRow label="Egress Interface" value={log.egress_interface} isMono />
+                        <DetailRow label="Egress Interface" value={log.egress_interface || 'N/A'} isMono />
                     </div>
                 </div>
 
