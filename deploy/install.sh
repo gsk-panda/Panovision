@@ -475,7 +475,10 @@ chmod 755 "$PROJECT_DIR/deploy/api-proxy.js"
 chown root:root "$PROJECT_DIR/deploy/api-proxy.js"
 
 if [ -f "$PROJECT_DIR/deploy/api-proxy.service" ]; then
-    cp "$PROJECT_DIR/deploy/api-proxy.service" /etc/systemd/system/api-proxy.service
+    # Update the service file with the correct paths
+    sed "s|/opt/panovision|$PROJECT_DIR|g" "$PROJECT_DIR/deploy/api-proxy.service" > /tmp/api-proxy.service
+    cp /tmp/api-proxy.service /etc/systemd/system/api-proxy.service
+    rm -f /tmp/api-proxy.service
     systemctl daemon-reload
     systemctl enable api-proxy
     systemctl start api-proxy
