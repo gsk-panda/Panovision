@@ -294,13 +294,23 @@ npm install --production=false
 
 echo ""
 NEXT_STEP=$((NEXT_STEP + 1))
+echo "Step $NEXT_STEP: Creating panovision service user..."
+if ! id "panovision" &>/dev/null; then
+    useradd -r -s /bin/false -d /opt/panovision panovision
+    echo "✓ Created panovision user"
+else
+    echo "✓ panovision user already exists"
+fi
+
+echo ""
+NEXT_STEP=$((NEXT_STEP + 1))
 echo "Step $NEXT_STEP: Storing API key securely (server-side only)..."
 mkdir -p /etc/panovision
 # Use printf to avoid shell interpretation of special characters
 printf '%s' "$PANORAMA_API_KEY" > /etc/panovision/api-key
 chmod 640 /etc/panovision/api-key
-chown root:nginx /etc/panovision/api-key
-echo "✓ API key stored securely in /etc/panovision/api-key (readable by nginx user)"
+chown root:panovision /etc/panovision/api-key
+echo "✓ API key stored securely in /etc/panovision/api-key (readable by panovision user)"
 # Verify the key was stored correctly (show length only)
 API_KEY_LENGTH=$(wc -c < /etc/panovision/api-key | tr -d ' ')
 echo "  API key length: $API_KEY_LENGTH bytes"
@@ -308,8 +318,8 @@ echo "  API key length: $API_KEY_LENGTH bytes"
 cat > /etc/panovision/panorama-config <<EOF
 PANORAMA_URL=$PANORAMA_URL
 EOF
-chmod 644 /etc/panovision/panorama-config
-chown root:root /etc/panovision/panorama-config
+chmod 640 /etc/panovision/panorama-config
+chown root:panovision /etc/panovision/panorama-config
 echo "✓ Panorama configuration stored in /etc/panovision/panorama-config"
 
 echo ""
@@ -471,7 +481,7 @@ fi
 # Ensure deploy directory exists
 mkdir -p "$PROJECT_DIR/deploy"
 chmod 755 "$PROJECT_DIR/deploy/api-proxy.js"
-chown root:root "$PROJECT_DIR/deploy/api-proxy.js"
+chown root:panovision "$PROJECT_DIR/deploy/api-proxy.js"
 
 if [ -f "$PROJECT_DIR/deploy/api-proxy.service" ]; then
     # Update the service file with the correct paths
