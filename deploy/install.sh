@@ -68,10 +68,78 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
+echo "=========================================="
+echo "Configuration"
+echo "=========================================="
+echo ""
+echo "Please provide the following configuration details:"
+echo ""
+
+read -p "Server URL or IP (e.g., panovision.officeours.com or 192.168.1.100): " SERVER_URL
+SERVER_URL=${SERVER_URL:-panovision.officeours.com}
+
+read -p "Panorama IP or URL (e.g., panorama.officeours.com or 192.168.1.50): " PANORAMA_URL
+PANORAMA_URL=${PANORAMA_URL:-panorama.officeours.com}
+
+if [[ ! "$PANORAMA_URL" =~ ^https?:// ]]; then
+    PANORAMA_URL="https://$PANORAMA_URL"
+fi
+
+PANORAMA_HOST=$(echo "$PANORAMA_URL" | sed 's|https\?://||' | sed 's|/.*||')
+
+read -p "Panorama API Key: " PANORAMA_API_KEY
+if [ -z "$PANORAMA_API_KEY" ]; then
+    echo "Warning: API Key is required for the application to function"
+    read -p "Panorama API Key (required): " PANORAMA_API_KEY
+    if [ -z "$PANORAMA_API_KEY" ]; then
+        echo "Error: API Key cannot be empty"
+        exit 1
+    fi
+fi
+
+if [ "$OIDC_ENABLED" != "false" ] && [ "$OIDC_ENABLED" != "0" ]; then
+    echo ""
+    echo "Azure OIDC Configuration (leave blank to skip OIDC setup):"
+    read -p "VITE_AZURE_CLIENT_ID: " AZURE_CLIENT_ID
+    read -p "VITE_AZURE_AUTHORITY (e.g., https://login.microsoftonline.com/tenant-id): " AZURE_AUTHORITY
+    
+    if [ -z "$AZURE_CLIENT_ID" ] || [ -z "$AZURE_AUTHORITY" ]; then
+        echo ""
+        echo "Azure OIDC configuration incomplete. OIDC will be disabled."
+        OIDC_ENABLED="false"
+        AZURE_CLIENT_ID=""
+        AZURE_AUTHORITY=""
+        AZURE_REDIRECT_URI=""
+    else
+        read -p "VITE_AZURE_REDIRECT_URI (default: https://$SERVER_URL): " AZURE_REDIRECT_URI
+        AZURE_REDIRECT_URI=${AZURE_REDIRECT_URI:-https://$SERVER_URL}
+    fi
+else
+    AZURE_CLIENT_ID=""
+    AZURE_AUTHORITY=""
+    AZURE_REDIRECT_URI=""
+fi
+
+echo ""
+echo "=========================================="
+echo "Configuration Summary"
+echo "=========================================="
+echo "Server URL: $SERVER_URL"
+echo "Panorama URL: $PANORAMA_URL"
+echo "API Key: ${PANORAMA_API_KEY:0:20}... (hidden)"
 if [ "$OIDC_ENABLED" = "false" ] || [ "$OIDC_ENABLED" = "0" ]; then
     echo "OIDC Authentication: DISABLED (anonymous access enabled)"
 else
-    echo "OIDC Authentication: ENABLED (default)"
+    echo "OIDC Authentication: ENABLED"
+    echo "Azure Client ID: ${AZURE_CLIENT_ID:0:20}... (hidden)"
+    echo "Azure Authority: $AZURE_AUTHORITY"
+    echo "Azure Redirect URI: $AZURE_REDIRECT_URI"
+fi
+echo ""
+read -p "Continue with installation? (y/N): " CONFIRM
+if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
+    echo "Installation cancelled."
+    exit 0
 fi
 echo ""
 
@@ -198,14 +266,47 @@ npm install --production=false
 
 echo ""
 NEXT_STEP=$((NEXT_STEP + 1))
+echo "Step $NEXT_STEP: Creating environment configuration..."
+cd "$PROJECT_DIR"
+
+cat > .env <<EOF
+VITE_PANORAMA_SERVER=$PANORAMA_URL
+VITE_PANORAMA_API_KEY=$PANORAMA_API_KEY
+EOF
+
+if [ "$OIDC_ENABLED" = "false" ] || [ "$OIDC_ENABLED" = "0" ]; then
+    echo "VITE_OIDC_ENABLED=false" >> .env
+else
+    echo "VITE_OIDC_ENABLED=true" >> .env
+    if [ -n "$AZURE_CLIENT_ID" ]; then
+        echo "VITE_AZURE_CLIENT_ID=$AZURE_CLIENT_ID" >> .env
+        echo "VITE_AZURE_AUTHORITY=$AZURE_AUTHORITY" >> .env
+        echo "VITE_AZURE_REDIRECT_URI=$AZURE_REDIRECT_URI" >> .env
+    fi
+fi
+
+echo "Environment file created at $PROJECT_DIR/.env"
+
+echo ""
+NEXT_STEP=$((NEXT_STEP + 1))
 echo "Step $NEXT_STEP: Building application..."
 
 if [ "$OIDC_ENABLED" = "false" ] || [ "$OIDC_ENABLED" = "0" ]; then
-    echo "Setting VITE_OIDC_ENABLED=false for build..."
+    echo "Building with OIDC disabled..."
     export VITE_OIDC_ENABLED=false
+    export VITE_PANORAMA_SERVER="$PANORAMA_URL"
+    export VITE_PANORAMA_API_KEY="$PANORAMA_API_KEY"
     npm run build
 else
-    echo "Building with OIDC enabled (default)..."
+    echo "Building with OIDC enabled..."
+    export VITE_OIDC_ENABLED=true
+    export VITE_PANORAMA_SERVER="$PANORAMA_URL"
+    export VITE_PANORAMA_API_KEY="$PANORAMA_API_KEY"
+    if [ -n "$AZURE_CLIENT_ID" ]; then
+        export VITE_AZURE_CLIENT_ID="$AZURE_CLIENT_ID"
+        export VITE_AZURE_AUTHORITY="$AZURE_AUTHORITY"
+        export VITE_AZURE_REDIRECT_URI="$AZURE_REDIRECT_URI"
+    fi
     npm run build
 fi
 
@@ -270,7 +371,11 @@ if [ ! -f "$NGINX_CONFIG_SOURCE" ]; then
     echo "Error: Nginx configuration file not found at $NGINX_CONFIG_SOURCE"
     exit 1
 fi
-cp "$NGINX_CONFIG_SOURCE" "$NGINX_CONF"
+
+sed "s|panovision.officeours.com|$SERVER_URL|g; s|panorama.officeours.com|$PANORAMA_HOST|g" "$NGINX_CONFIG_SOURCE" > "$NGINX_CONF"
+echo "Nginx configuration updated with:"
+echo "  Server name: $SERVER_URL"
+echo "  Panorama proxy: $PANORAMA_URL (host: $PANORAMA_HOST)"
 
 echo ""
 echo "Setting up self-signed SSL certificate..."
@@ -281,7 +386,7 @@ if [ ! -f "$SSL_DIR/panovision-selfsigned.crt" ]; then
     openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
         -keyout "$SSL_DIR/panovision-selfsigned.key" \
         -out "$SSL_DIR/panovision-selfsigned.crt" \
-        -subj "/C=US/ST=State/L=City/O=Organization/CN=panovision.officeours.com" 2>/dev/null
+        -subj "/C=US/ST=State/L=City/O=Organization/CN=$SERVER_URL" 2>/dev/null
     
     chmod 600 "$SSL_DIR/panovision-selfsigned.key"
     chmod 644 "$SSL_DIR/panovision-selfsigned.crt"
@@ -321,15 +426,22 @@ echo ""
 echo "Application deployed to: $APP_DIR"
 echo "Nginx config: $NGINX_CONF"
 echo "Project directory: $PROJECT_DIR"
+echo "Server URL: $SERVER_URL"
+echo "Panorama URL: $PANORAMA_URL"
 if [ "$OIDC_ENABLED" = "false" ] || [ "$OIDC_ENABLED" = "0" ]; then
     echo "OIDC Authentication: DISABLED (anonymous access)"
 else
     echo "OIDC Authentication: ENABLED"
+    if [ -n "$AZURE_CLIENT_ID" ]; then
+        echo "Azure Client ID: ${AZURE_CLIENT_ID:0:20}... (hidden)"
+        echo "Azure Authority: $AZURE_AUTHORITY"
+        echo "Azure Redirect URI: $AZURE_REDIRECT_URI"
+    fi
 fi
 echo ""
 echo "Next steps:"
-echo "1. Configure DNS to point panovision.officeours.com to this server"
-echo "2. Access: https://panovision.officeours.com (browser will warn about self-signed cert)"
+echo "1. Configure DNS to point $SERVER_URL to this server"
+echo "2. Access: https://$SERVER_URL (browser will warn about self-signed cert)"
 echo ""
 echo "To check Nginx status: systemctl status nginx"
 echo "To view logs: tail -f /var/log/nginx/panovision-error.log"

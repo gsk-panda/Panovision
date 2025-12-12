@@ -1,7 +1,7 @@
 import { TrafficLog, SearchParams } from '../types';
 
-const PANORAMA_SERVER = 'https://panorama.officeours.com';
-const PANORAMA_API_KEY = 'LUFRPT1oQ0s3aVFlTUl0QUg5S2dYRGZkdGxEbks3a289dzczNHg3T0VsRS9yYmFMcEpWdXBWckpPL3k2dGtRUGdGdmZLdEprNitKOTQwdTZkMmswR0NSbzJmdEhDU3g4NQ==';
+const PANORAMA_SERVER = import.meta.env.VITE_PANORAMA_SERVER || 'https://panorama.officeours.com';
+const PANORAMA_API_KEY = import.meta.env.VITE_PANORAMA_API_KEY || '';
 
 const getApiBaseUrl = (): string => {
   if (typeof window !== 'undefined') {
