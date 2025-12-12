@@ -21,6 +21,8 @@ export interface ApiError {
 
 const buildPaloAltoQuery = (params: SearchParams): string => {
   const parts: string[] = [];
+  
+  parts.push(`(subtype neq 'start')`);
 
   if (params.srcIp) {
       const op = params.isNotSrcIp ? 'neq' : 'eq';
