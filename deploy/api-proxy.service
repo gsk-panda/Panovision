@@ -4,8 +4,8 @@ After=network.target
 
 [Service]
 Type=simple
-User=nginx
-Group=nginx
+User=root
+Group=root
 WorkingDirectory=/opt/panovision
 ExecStart=/usr/bin/node /opt/panovision/deploy/api-proxy.js
 Restart=always
