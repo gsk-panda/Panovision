@@ -89,8 +89,8 @@ const parsePaloAltoXML = (xmlString: string): TrafficLog[] => {
         packets_received: parseInt(getVal('pkts_received')) || 0,
         src_zone: getVal('from'),
         dst_zone: getVal('to'),
-        ingress_interface: getVal('ingress_interface') || getVal('ingress_if') || getVal('if_name') || '',
-        egress_interface: getVal('egress_interface') || getVal('egress_if') || getVal('if_name') || '',
+        ingress_interface: getVal('inbound_if') || '',
+        egress_interface: getVal('outbound_if') || '',
         duration: parseInt(getVal('elapsed')) || 0,
       });
     } catch (e) {
