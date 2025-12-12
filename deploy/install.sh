@@ -75,11 +75,11 @@ echo ""
 echo "Please provide the following configuration details:"
 echo ""
 
-read -p "Server URL or IP (e.g., panovision.officeours.com or 192.168.1.100): " SERVER_URL
-SERVER_URL=${SERVER_URL:-panovision.officeours.com}
+read -p "Server URL or IP (e.g., panovision.example.com or 192.168.1.100): " SERVER_URL
+SERVER_URL=${SERVER_URL:-panovision.example.com}
 
-read -p "Panorama IP or URL (e.g., panorama.officeours.com or 192.168.1.50): " PANORAMA_URL
-PANORAMA_URL=${PANORAMA_URL:-panorama.officeours.com}
+read -p "Panorama IP or URL (e.g., panorama.example.com or 192.168.1.50): " PANORAMA_URL
+PANORAMA_URL=${PANORAMA_URL:-panorama.example.com}
 
 if [[ ! "$PANORAMA_URL" =~ ^https?:// ]]; then
     PANORAMA_URL="https://$PANORAMA_URL"
@@ -286,6 +286,19 @@ else
 fi
 
 echo "Environment file created at $PROJECT_DIR/.env"
+
+cat > "$PROJECT_DIR/deploy/config.sh" <<EOF
+#!/bin/bash
+# PanoVision Configuration
+# This file is auto-generated during installation
+
+SERVER_URL="$SERVER_URL"
+PANORAMA_URL="$PANORAMA_URL"
+PANORAMA_HOST="$PANORAMA_HOST"
+EOF
+
+chmod 644 "$PROJECT_DIR/deploy/config.sh"
+echo "Configuration file created at $PROJECT_DIR/deploy/config.sh"
 
 echo ""
 NEXT_STEP=$((NEXT_STEP + 1))

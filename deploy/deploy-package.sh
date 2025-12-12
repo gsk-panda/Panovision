@@ -116,7 +116,7 @@ if [ ! -f "$SSL_DIR/panovision-selfsigned.crt" ]; then
     openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
         -keyout "$SSL_DIR/panovision-selfsigned.key" \
         -out "$SSL_DIR/panovision-selfsigned.crt" \
-        -subj "/C=US/ST=State/L=City/O=Organization/CN=panovision.officeours.com" 2>/dev/null
+        -subj "/C=US/ST=State/L=City/O=Organization/CN=${SERVER_URL:-panovision.example.com}" 2>/dev/null
     
     chmod 600 "$SSL_DIR/panovision-selfsigned.key"
     chmod 644 "$SSL_DIR/panovision-selfsigned.crt"
@@ -173,9 +173,10 @@ else
 fi
 
 echo ""
+SERVER_URL="${SERVER_URL:-panovision.example.com}"
 echo "Next steps:"
-echo "1. Configure DNS: panovision.officeours.com -> $(hostname -I | awk '{print $1}')"
-echo "2. Access: https://panovision.officeours.com (browser will warn about self-signed cert)"
+echo "1. Configure DNS: $SERVER_URL -> $(hostname -I | awk '{print $1}')"
+echo "2. Access: https://$SERVER_URL (browser will warn about self-signed cert)"
 echo ""
 echo "View logs: tail -f /var/log/nginx/panovision-error.log"
 echo ""

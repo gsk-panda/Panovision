@@ -10,12 +10,12 @@
 
 2. **Transfer to the server:**
    ```bash
-   scp panovision-deploy.tar.gz root@panovision.officeours.com:/opt/
+   scp panovision-deploy.tar.gz root@<your-server-ip-or-hostname>:/opt/
    ```
 
 3. **SSH into the server:**
    ```bash
-   ssh root@panovision.officeours.com
+   ssh root@<your-server-ip-or-hostname>
    ```
 
 4. **Extract and run:**
@@ -31,7 +31,7 @@
 
 1. **SSH into the server:**
    ```bash
-   ssh root@panovision.officeours.com
+   ssh root@<your-server-ip-or-hostname>
    ```
 
 2. **Clone and deploy:**
@@ -53,7 +53,7 @@ cd /path/to/New-Panovision && chmod +x deploy/deploy-package.sh && ./deploy/depl
 
 ## Post-Installation
 
-The deployment script automatically creates a self-signed SSL certificate. The site will be accessible at `https://panovision.officeours.com`, but browsers will show a security warning for the self-signed certificate. This is expected behavior.
+The deployment script automatically creates a self-signed SSL certificate. The site will be accessible at `https://<your-server-url>`, but browsers will show a security warning for the self-signed certificate. This is expected behavior.
 
 ## Troubleshooting
 

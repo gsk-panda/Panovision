@@ -1,5 +1,14 @@
 #!/bin/bash
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/config.sh" ]; then
+    source "$SCRIPT_DIR/config.sh"
+else
+    PANORAMA_URL="${PANORAMA_URL:-https://panorama.example.com}"
+fi
+
+PANORAMA_HOST=$(echo "$PANORAMA_URL" | sed 's|https\?://||' | sed 's|/.*||')
+
 echo "=========================================="
 echo "Fixing 502 Bad Gateway - Proxy Issues"
 echo "=========================================="
@@ -11,28 +20,28 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 echo "Step 1: Testing DNS resolution..."
-if nslookup panorama.officeours.com >/dev/null 2>&1; then
+if nslookup "$PANORAMA_HOST" >/dev/null 2>&1; then
     echo "✓ DNS resolution works"
-    nslookup panorama.officeours.com | grep -A 2 "Name:"
+    nslookup "$PANORAMA_HOST" | grep -A 2 "Name:"
 else
     echo "✗ DNS resolution failed"
     echo "  Trying with dig..."
-    dig panorama.officeours.com +short || echo "  Dig also failed"
+    dig "$PANORAMA_HOST" +short || echo "  Dig also failed"
 fi
 echo ""
 
 echo "Step 2: Testing connectivity to Panorama..."
-TEST_URL="https://panorama.officeours.com/api/?type=log&log-type=traffic&key=test&nlogs=1"
+TEST_URL="$PANORAMA_URL/api/?type=log&log-type=traffic&key=test&nlogs=1"
 HTTP_CODE=$(curl -k -s -o /dev/null -w "%{http_code}" --connect-timeout 10 "$TEST_URL" 2>&1)
 if echo "$HTTP_CODE" | grep -qE "^[0-9]{3}$"; then
     echo "✓ Can reach Panorama (HTTP $HTTP_CODE)"
 else
     echo "✗ Cannot reach Panorama server (got: $HTTP_CODE)"
     echo "  Testing basic connectivity..."
-    ping -c 2 panorama.officeours.com 2>/dev/null && echo "  Ping works" || echo "  Ping failed"
+    ping -c 2 "$PANORAMA_HOST" 2>/dev/null && echo "  Ping works" || echo "  Ping failed"
     echo ""
     echo "  Testing port 443..."
-    timeout 5 bash -c "</dev/tcp/panorama.officeours.com/443" 2>/dev/null && echo "  Port 443 is open" || echo "  Port 443 is not accessible"
+    timeout 5 bash -c "</dev/tcp/$PANORAMA_HOST/443" 2>/dev/null && echo "  Port 443 is open" || echo "  Port 443 is not accessible"
 fi
 echo ""
 
@@ -92,7 +101,7 @@ elif [ "$PROXY_TEST" = "502" ]; then
     echo "2. Firewall is blocking outbound HTTPS connections"
     echo "3. Panorama server is rejecting the connection"
     echo ""
-    echo "Try manually: curl -k -v https://panorama.officeours.com/api/?type=log&log-type=traffic&key=TEST&nlogs=1"
+    echo "Try manually: curl -k -v $PANORAMA_URL/api/?type=log&log-type=traffic&key=TEST&nlogs=1"
 else
     echo "Proxy test returned HTTP $PROXY_TEST"
 fi

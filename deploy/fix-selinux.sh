@@ -1,5 +1,12 @@
 #!/bin/bash
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/config.sh" ]; then
+    source "$SCRIPT_DIR/config.sh"
+else
+    SERVER_URL="${SERVER_URL:-panovision.example.com}"
+fi
+
 echo "=========================================="
 echo "Fixing SELinux for Nginx Proxy"
 echo "=========================================="
@@ -45,7 +52,7 @@ if command -v getenforce &>/dev/null; then
     echo "=========================================="
     echo ""
     echo "The proxy should now work. Test it:"
-    echo "  curl -k 'https://panovision.officeours.com/api/panorama?type=log&log-type=traffic&key=TEST&nlogs=1'"
+    echo "  curl -k 'https://$SERVER_URL/api/panorama?type=log&log-type=traffic&key=TEST&nlogs=1'"
     echo ""
 else
     echo "SELinux tools not found. This might not be a SELinux issue."

@@ -1,5 +1,15 @@
 #!/bin/bash
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/config.sh" ]; then
+    source "$SCRIPT_DIR/config.sh"
+else
+    SERVER_URL="${SERVER_URL:-panovision.example.com}"
+    PANORAMA_URL="${PANORAMA_URL:-https://panorama.example.com}"
+fi
+
+PANORAMA_HOST=$(echo "$PANORAMA_URL" | sed 's|https\?://||' | sed 's|/.*||')
+
 echo "=========================================="
 echo "Testing Proxy with Real API Key"
 echo "=========================================="
@@ -8,7 +18,7 @@ echo ""
 API_KEY="LUFRPT0xQ0JKa2YrR1hFcVdra1pjL2Q2V2w0eXo0bmc9dzczNHg3T0VsRS9yYmFMcEpWdXBWdnF3cEQ2OTduSU9yRTlqQmJEbyt1bDY0NlR1VUhrNlkybGRRTHJ0Y2ZIdw=="
 
 echo "1. Testing direct connection to Panorama..."
-DIRECT_RESPONSE=$(curl -k -s "https://panorama.officeours.com/api/?type=log&log-type=traffic&key=${API_KEY}&nlogs=1")
+DIRECT_RESPONSE=$(curl -k -s "$PANORAMA_URL/api/?type=log&log-type=traffic&key=${API_KEY}&nlogs=1")
 if echo "$DIRECT_RESPONSE" | grep -q "<response"; then
     echo "✓ Direct connection works"
     echo "Response preview:"
@@ -20,7 +30,7 @@ fi
 echo ""
 
 echo "2. Testing proxy endpoint..."
-PROXY_RESPONSE=$(curl -k -s "https://panovision.officeours.com/api/panorama?type=log&log-type=traffic&key=${API_KEY}&nlogs=1")
+PROXY_RESPONSE=$(curl -k -s "https://$SERVER_URL/api/panorama?type=log&log-type=traffic&key=${API_KEY}&nlogs=1")
 if echo "$PROXY_RESPONSE" | grep -q "<response"; then
     echo "✓ Proxy is working!"
     echo "Response preview:"
@@ -40,8 +50,8 @@ fi
 echo ""
 
 echo "3. Testing proxy with verbose output..."
-echo "Running: curl -k -v 'https://panovision.officeours.com/api/panorama?type=log&log-type=traffic&key=REDACTED&nlogs=1'"
-curl -k -v "https://panovision.officeours.com/api/panorama?type=log&log-type=traffic&key=${API_KEY}&nlogs=1" 2>&1 | grep -E "(HTTP|Host|Location|502|error)" | head -10
+echo "Running: curl -k -v 'https://$SERVER_URL/api/panorama?type=log&log-type=traffic&key=REDACTED&nlogs=1'"
+curl -k -v "https://$SERVER_URL/api/panorama?type=log&log-type=traffic&key=${API_KEY}&nlogs=1" 2>&1 | grep -E "(HTTP|Host|Location|502|error)" | head -10
 echo ""
 
 echo "=========================================="

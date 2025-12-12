@@ -60,7 +60,14 @@ echo ""
 echo "Reloading Nginx..."
 systemctl reload nginx
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/config.sh" ]; then
+    source "$SCRIPT_DIR/config.sh"
+else
+    SERVER_URL="${SERVER_URL:-panovision.example.com}"
+fi
+
 echo ""
-echo "Test the site: https://panovision.officeours.com"
+echo "Test the site: https://$SERVER_URL"
 echo ""
 

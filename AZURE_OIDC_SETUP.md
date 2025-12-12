@@ -18,7 +18,7 @@ This guide explains how to configure Azure Active Directory (Azure AD) OIDC auth
    - **Supported account types**: Choose based on your needs (Single tenant, Multi-tenant, etc.)
    - **Redirect URI**: 
      - Type: **Single-page application (SPA)**
-     - URI: `https://panovision.officeours.com`
+     - URI: `https://panovision.example.com` (replace with your actual server URL)
 5. Click **Register**
 
 ## Step 2: Configure App Registration
@@ -48,7 +48,7 @@ Create a `.env` file in the project root (or copy from `.env.example`):
 ```env
 VITE_AZURE_CLIENT_ID=your-client-id-here
 VITE_AZURE_AUTHORITY=https://login.microsoftonline.com/your-tenant-id
-VITE_AZURE_REDIRECT_URI=https://panovision.officeours.com
+VITE_AZURE_REDIRECT_URI=https://panovision.example.com
 
 # OIDC Feature Toggle
 # Set to 'false' or '0' to disable OIDC authentication
@@ -100,7 +100,7 @@ VITE_AZURE_CLIENT_ID=xxx VITE_AZURE_AUTHORITY=xxx npm run build
 - Check the App Registration exists in Azure Portal
 
 ### Redirect URI mismatch
-- Ensure the redirect URI in Azure AD matches exactly: `https://panovision.officeours.com`
+- Ensure the redirect URI in Azure AD matches exactly: `https://panovision.example.com` (replace with your actual server URL)
 - Check for trailing slashes or protocol mismatches
 
 ### "AADSTS50011" error

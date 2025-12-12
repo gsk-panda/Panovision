@@ -1,6 +1,6 @@
 import { TrafficLog, SearchParams } from '../types';
 
-const PANORAMA_SERVER = import.meta.env.VITE_PANORAMA_SERVER || 'https://panorama.officeours.com';
+const PANORAMA_SERVER = import.meta.env.VITE_PANORAMA_SERVER || '';
 const PANORAMA_API_KEY = import.meta.env.VITE_PANORAMA_API_KEY || '';
 
 const getApiBaseUrl = (): string => {

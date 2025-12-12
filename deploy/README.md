@@ -5,7 +5,7 @@ This guide provides instructions for deploying PanoVision on a RHEL 9.7 system u
 ## Prerequisites
 
 - RHEL 9.7 system with root/sudo access
-- DNS record configured for `panovision.officeours.com` pointing to the server IP
+- DNS record configured for your server URL (e.g., `panovision.example.com`) pointing to the server IP
 - Ports 80 and 443 open in firewall
 - **Node.js 18+ required** (script will install Node.js 20.x from NodeSource)
 
@@ -185,6 +185,6 @@ firewall-cmd --list-all
 
 For issues or questions:
 - Check Nginx error logs: `/var/log/nginx/panovision-error.log`
-- Verify DNS resolution: `nslookup panovision.officeours.com`
-- Test connectivity: `curl -I https://panovision.officeours.com`
+- Verify DNS resolution: `nslookup <your-server-url>`
+- Test connectivity: `curl -I https://<your-server-url>`
 
