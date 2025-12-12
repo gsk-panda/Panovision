@@ -296,10 +296,14 @@ echo ""
 NEXT_STEP=$((NEXT_STEP + 1))
 echo "Step $NEXT_STEP: Storing API key securely (server-side only)..."
 mkdir -p /etc/panovision
-echo "$PANORAMA_API_KEY" > /etc/panovision/api-key
+# Use printf to avoid shell interpretation of special characters
+printf '%s' "$PANORAMA_API_KEY" > /etc/panovision/api-key
 chmod 640 /etc/panovision/api-key
 chown root:nginx /etc/panovision/api-key
 echo "✓ API key stored securely in /etc/panovision/api-key (readable by nginx user)"
+# Verify the key was stored correctly (show length only)
+API_KEY_LENGTH=$(wc -c < /etc/panovision/api-key | tr -d ' ')
+echo "  API key length: $API_KEY_LENGTH bytes"
 
 cat > /etc/panovision/panorama-config <<EOF
 PANORAMA_URL=$PANORAMA_URL

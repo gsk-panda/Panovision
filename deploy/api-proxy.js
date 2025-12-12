@@ -14,8 +14,14 @@ function loadConfig() {
   try {
     if (fs.existsSync(API_KEY_FILE)) {
       apiKey = fs.readFileSync(API_KEY_FILE, 'utf8').trim();
+      // Remove any trailing newlines, carriage returns, or other whitespace
+      apiKey = apiKey.replace(/[\r\n]+/g, '').trim();
       if (!apiKey) {
         console.error('Warning: API key file exists but is empty');
+      } else {
+        console.log(`API key loaded: ${apiKey.length} characters`);
+        // Log first and last few characters for debugging (without exposing full key)
+        console.log(`API key preview: ${apiKey.substring(0, 10)}...${apiKey.substring(apiKey.length - 10)}`);
       }
     } else {
       console.error(`Error: API key file not found at ${API_KEY_FILE}`);
@@ -54,6 +60,7 @@ const server = http.createServer((req, res) => {
       return;
     }
 
+    // Ensure API key is properly URL-encoded
     queryParams.set('key', apiKey);
 
     const panoramaUrlObj = new URL(panoramaUrl);
