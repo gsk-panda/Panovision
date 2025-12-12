@@ -38,63 +38,82 @@ function loadConfig() {
 loadConfig();
 
 const server = http.createServer((req, res) => {
-  if (req.method !== 'GET') {
-    res.writeHead(405, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Method not allowed' }));
-    return;
-  }
+  try {
+    if (req.method !== 'GET') {
+      res.writeHead(405, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Method not allowed' }));
+      return;
+    }
 
-  const requestUrl = new URL(req.url, `http://${req.headers.host}`);
-  const queryParams = requestUrl.searchParams;
+    const requestUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+    const queryParams = requestUrl.searchParams;
 
-  if (!apiKey) {
-    res.writeHead(500, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'API key not configured' }));
-    return;
-  }
+    if (!apiKey) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'API key not configured' }));
+      return;
+    }
 
-  queryParams.set('key', apiKey);
+    queryParams.set('key', apiKey);
 
-  const panoramaUrlObj = new URL(panoramaUrl);
-  let targetPath = requestUrl.pathname;
-  if (targetPath.startsWith('/api/panorama')) {
-    targetPath = targetPath.replace('/api/panorama', '/api');
-  } else if (!targetPath.startsWith('/api')) {
-    targetPath = `/api${targetPath}`;
-  }
-  targetPath = `${targetPath}?${queryParams.toString()}`;
+    const panoramaUrlObj = new URL(panoramaUrl);
+    let targetPath = requestUrl.pathname;
+    // Ensure path starts with /api
+    if (!targetPath.startsWith('/api')) {
+      targetPath = `/api${targetPath}`;
+    }
+    targetPath = `${targetPath}?${queryParams.toString()}`;
 
-  const options = {
-    hostname: panoramaUrlObj.hostname,
-    port: panoramaUrlObj.port || 443,
-    path: targetPath,
-    method: 'GET',
-    headers: {
-      'Accept': 'application/xml',
-      'User-Agent': 'Panorama-API-Proxy/1.0',
-      'Host': panoramaUrlObj.hostname,
-    },
-    rejectUnauthorized: false,
-  };
+    const options = {
+      hostname: panoramaUrlObj.hostname,
+      port: panoramaUrlObj.port || 443,
+      path: targetPath,
+      method: 'GET',
+      headers: {
+        'Accept': 'application/xml',
+        'User-Agent': 'Panorama-API-Proxy/1.0',
+        'Host': panoramaUrlObj.hostname,
+      },
+      rejectUnauthorized: false,
+    };
 
-  const proxyReq = https.request(options, (proxyRes) => {
-    res.writeHead(proxyRes.statusCode, {
-      'Content-Type': proxyRes.headers['content-type'] || 'application/xml',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Accept, Content-Type',
+    const proxyReq = https.request(options, (proxyRes) => {
+      res.writeHead(proxyRes.statusCode, {
+        'Content-Type': proxyRes.headers['content-type'] || 'application/xml',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Accept, Content-Type',
+      });
+
+      proxyRes.pipe(res);
     });
 
-    proxyRes.pipe(res);
-  });
+    proxyReq.on('error', (error) => {
+      console.error('Proxy error connecting to Panorama:', error);
+      console.error('Target URL:', panoramaUrl);
+      console.error('Target path:', targetPath);
+      if (!res.headersSent) {
+        res.writeHead(502, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Proxy error', message: error.message }));
+      }
+    });
 
-  proxyReq.on('error', (error) => {
-    console.error('Proxy error:', error);
-    res.writeHead(502, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Proxy error', message: error.message }));
-  });
+    req.on('error', (error) => {
+      console.error('Request error:', error);
+      if (!res.headersSent) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Request error', message: error.message }));
+      }
+    });
 
-  req.pipe(proxyReq);
+    req.pipe(proxyReq);
+  } catch (error) {
+    console.error('Server error processing request:', error);
+    if (!res.headersSent) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Server error', message: error.message }));
+    }
+  }
 });
 
 const PORT = 3001;
