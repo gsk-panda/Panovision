@@ -2,8 +2,19 @@
 
 set -e
 
+GITHUB_REPO="https://github.com/gsk-panda/New-Panovision.git"
+INSTALL_DIR="/opt/New-Panovision"
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+if [ -f "$SCRIPT_DIR/../package.json" ] && [ -d "$SCRIPT_DIR/../.git" ]; then
+    PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+    echo "Running from existing repository: $PROJECT_DIR"
+else
+    PROJECT_DIR="$INSTALL_DIR"
+    echo "Standalone mode: Will clone repository from GitHub"
+fi
+
 APP_USER="panovision"
 APP_DIR="/var/www/panovision"
 NGINX_CONF="/etc/nginx/conf.d/panovision.conf"
@@ -22,8 +33,41 @@ fi
 echo "Step 1: Updating system packages..."
 dnf update -y
 
+if [ ! -f "$SCRIPT_DIR/../package.json" ] || [ ! -d "$SCRIPT_DIR/../.git" ]; then
+    echo ""
+    echo "Step 2: Downloading repository from GitHub..."
+    
+    if ! command -v git &> /dev/null; then
+        echo "Installing Git..."
+        dnf install -y git
+    fi
+    
+    if [ -d "$INSTALL_DIR" ]; then
+        echo "Directory $INSTALL_DIR already exists. Removing old installation..."
+        rm -rf "$INSTALL_DIR"
+    fi
+    
+    echo "Cloning repository from $GITHUB_REPO..."
+    git clone "$GITHUB_REPO" "$INSTALL_DIR"
+    
+    if [ ! -d "$INSTALL_DIR" ] || [ ! -f "$INSTALL_DIR/package.json" ]; then
+        echo "Error: Failed to clone repository or repository is invalid"
+        exit 1
+    fi
+    
+    echo "Repository cloned successfully to $INSTALL_DIR"
+    PROJECT_DIR="$INSTALL_DIR"
+    echo ""
+    
+    CLONE_STEP=2
+    NEXT_STEP=3
+else
+    CLONE_STEP=0
+    NEXT_STEP=2
+fi
+
 echo ""
-echo "Step 2: Installing Node.js (latest LTS from NodeSource, required for Vite 5)..."
+echo "Step $NEXT_STEP: Installing Node.js (latest LTS from NodeSource, required for Vite 5)..."
 if command -v node &> /dev/null; then
     CURRENT_NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
     echo "Current Node.js version: $(node -v)"
@@ -51,7 +95,8 @@ if [ "$NODE_MAJOR_VERSION" -lt "18" ]; then
 fi
 
 echo ""
-echo "Step 3: Installing Nginx (latest version)..."
+NEXT_STEP=$((NEXT_STEP + 1))
+echo "Step $NEXT_STEP: Installing Nginx (latest version)..."
 if ! command -v nginx &> /dev/null; then
     dnf install -y nginx
 else
@@ -63,7 +108,8 @@ NGINX_VERSION=$(nginx -v 2>&1 | cut -d'/' -f2)
 echo "Installed Nginx version: $NGINX_VERSION"
 
 echo ""
-echo "Step 4: Installing Firewalld (if needed)..."
+NEXT_STEP=$((NEXT_STEP + 1))
+echo "Step $NEXT_STEP: Installing Firewalld (if needed)..."
 if ! systemctl is-active --quiet firewalld 2>/dev/null; then
     dnf install -y firewalld
     systemctl enable firewalld
@@ -71,7 +117,8 @@ if ! systemctl is-active --quiet firewalld 2>/dev/null; then
 fi
 
 echo ""
-echo "Step 5: Creating application user..."
+NEXT_STEP=$((NEXT_STEP + 1))
+echo "Step $NEXT_STEP: Creating application user..."
 if ! id "$APP_USER" &>/dev/null; then
     useradd -r -s /bin/false -d "$APP_DIR" "$APP_USER"
     echo "Created user: $APP_USER"
@@ -80,12 +127,14 @@ else
 fi
 
 echo ""
-echo "Step 6: Creating application directory..."
+NEXT_STEP=$((NEXT_STEP + 1))
+echo "Step $NEXT_STEP: Creating application directory..."
 mkdir -p "$APP_DIR"
 chown -R "$APP_USER:$APP_USER" "$APP_DIR"
 
 echo ""
-echo "Step 7: Verifying Node.js version before build..."
+NEXT_STEP=$((NEXT_STEP + 1))
+echo "Step $NEXT_STEP: Verifying Node.js version before build..."
 NODE_VERSION=$(node -v)
 NODE_MAJOR_VERSION=$(echo "$NODE_VERSION" | cut -d'v' -f2 | cut -d'.' -f1)
 echo "Using Node.js: $NODE_VERSION"
@@ -97,12 +146,14 @@ if [ "$NODE_MAJOR_VERSION" -lt "18" ]; then
 fi
 
 echo ""
-echo "Step 8: Installing Node.js dependencies..."
+NEXT_STEP=$((NEXT_STEP + 1))
+echo "Step $NEXT_STEP: Installing Node.js dependencies..."
 cd "$PROJECT_DIR"
 npm install --production=false
 
 echo ""
-echo "Step 9: Building application..."
+NEXT_STEP=$((NEXT_STEP + 1))
+echo "Step $NEXT_STEP: Building application..."
 npm run build
 
 if [ ! -d "$PROJECT_DIR/dist" ]; then
@@ -111,11 +162,13 @@ if [ ! -d "$PROJECT_DIR/dist" ]; then
 fi
 
 echo ""
-echo "Step 10: Deploying application files..."
+NEXT_STEP=$((NEXT_STEP + 1))
+echo "Step $NEXT_STEP: Deploying application files..."
 rsync -av --delete "$PROJECT_DIR/dist/" "$APP_DIR/"
 
 echo ""
-echo "Step 11: Setting file permissions and ownership..."
+NEXT_STEP=$((NEXT_STEP + 1))
+echo "Step $NEXT_STEP: Setting file permissions and ownership..."
 NGINX_USER="nginx"
 if ! id "$NGINX_USER" &>/dev/null; then
     NGINX_USER="www-data"
@@ -131,7 +184,8 @@ find "$APP_DIR" -type d -exec chmod 755 {} \;
 find "$APP_DIR" -type f -exec chmod 644 {} \;
 
 echo ""
-echo "Step 12: Configuring SELinux (if enabled)..."
+NEXT_STEP=$((NEXT_STEP + 1))
+echo "Step $NEXT_STEP: Configuring SELinux (if enabled)..."
 if command -v getenforce &>/dev/null; then
     SELINUX_STATUS=$(getenforce)
     echo "SELinux status: $SELINUX_STATUS"
@@ -156,8 +210,14 @@ else
 fi
 
 echo ""
-echo "Step 13: Configuring Nginx..."
-cp "$SCRIPT_DIR/nginx-panovision.conf" "$NGINX_CONF"
+NEXT_STEP=$((NEXT_STEP + 1))
+echo "Step $NEXT_STEP: Configuring Nginx..."
+NGINX_CONFIG_SOURCE="$PROJECT_DIR/deploy/nginx-panovision.conf"
+if [ ! -f "$NGINX_CONFIG_SOURCE" ]; then
+    echo "Error: Nginx configuration file not found at $NGINX_CONFIG_SOURCE"
+    exit 1
+fi
+cp "$NGINX_CONFIG_SOURCE" "$NGINX_CONF"
 
 echo ""
 echo "Setting up self-signed SSL certificate..."
@@ -178,11 +238,13 @@ else
 fi
 
 echo ""
-echo "Step 14: Testing Nginx configuration..."
+NEXT_STEP=$((NEXT_STEP + 1))
+echo "Step $NEXT_STEP: Testing Nginx configuration..."
 nginx -t
 
 echo ""
-echo "Step 15: Configuring firewall..."
+NEXT_STEP=$((NEXT_STEP + 1))
+echo "Step $NEXT_STEP: Configuring firewall..."
 if systemctl is-active --quiet firewalld; then
     firewall-cmd --permanent --add-service=http
     firewall-cmd --permanent --add-service=https
@@ -193,7 +255,8 @@ else
 fi
 
 echo ""
-echo "Step 16: Enabling and starting services..."
+NEXT_STEP=$((NEXT_STEP + 1))
+echo "Step $NEXT_STEP: Enabling and starting services..."
 systemctl enable nginx
 systemctl restart nginx
 
@@ -204,6 +267,7 @@ echo "=========================================="
 echo ""
 echo "Application deployed to: $APP_DIR"
 echo "Nginx config: $NGINX_CONF"
+echo "Project directory: $PROJECT_DIR"
 echo ""
 echo "Next steps:"
 echo "1. Configure DNS to point panovision.officeours.com to this server"
@@ -211,5 +275,10 @@ echo "2. Access: https://panovision.officeours.com (browser will warn about self
 echo ""
 echo "To check Nginx status: systemctl status nginx"
 echo "To view logs: tail -f /var/log/nginx/panovision-error.log"
+echo ""
+echo "To update the application:"
+echo "  cd $PROJECT_DIR"
+echo "  git pull"
+echo "  ./deploy/update.sh"
 echo ""
 
