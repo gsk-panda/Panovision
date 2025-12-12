@@ -1,0 +1,42 @@
+Dec 12 14:03:00 paweblog01p node[294837]: ReferenceError: require is not defined in ES module scope, you can use import instead
+Dec 12 14:03:00 paweblog01p node[294837]: This file is being treated as an ES module because it has a '.js' file extension and '/opt/New-Panovision/package.json' contains "type": "module". To treat it as a CommonJS script, rename it to use the '.cjs' file>
+Dec 12 14:03:00 paweblog01p node[294837]:     at file:///opt/New-Panovision/deploy/api-proxy.js:1:14
+Dec 12 14:03:00 paweblog01p node[294837]:     at ModuleJob.run (node:internal/modules/esm/module_job:195:25)
+Dec 12 14:03:00 paweblog01p node[294837]:     at async ModuleLoader.import (node:internal/modules/esm/loader:337:24)
+Dec 12 14:03:00 paweblog01p node[294837]:     at async loadESM (node:internal/process/esm_loader:34:7)
+Dec 12 14:03:00 paweblog01p node[294837]:     at async handleMainPromise (node:internal/modules/run_main:106:12)
+Dec 12 14:03:00 paweblog01p node[294837]: Node.js v18.20.8
+Dec 12 14:03:00 paweblog01p systemd[1]: api-proxy.service: Main process exited, code=exited, status=1/FAILURE
+Dec 12 14:03:00 paweblog01p systemd[1]: api-proxy.service: Failed with result 'exit-code'.
+Dec 12 14:03:10 paweblog01p systemd[1]: api-proxy.service: Scheduled restart job, restart counter is at 544.
+Dec 12 14:03:10 paweblog01p systemd[1]: Stopped PanoVision API Proxy Service.
+Dec 12 14:03:10 paweblog01p systemd[1]: Started PanoVision API Proxy Service.
+Dec 12 14:03:10 paweblog01p node[294854]: file:///opt/New-Panovision/deploy/api-proxy.js:1
+Dec 12 14:03:10 paweblog01p node[294854]: const http = require('http');
+Dec 12 14:03:10 paweblog01p node[294854]:              ^
+Dec 12 14:03:10 paweblog01p node[294854]: ReferenceError: require is not defined in ES module scope, you can use import instead
+Dec 12 14:03:10 paweblog01p node[294854]: This file is being treated as an ES module because it has a '.js' file extension and '/opt/New-Panovision/package.json' contains "type": "module". To treat it as a CommonJS script, rename it to use the '.cjs' file>
+Dec 12 14:03:10 paweblog01p node[294854]:     at file:///opt/New-Panovision/deploy/api-proxy.js:1:14
+Dec 12 14:03:10 paweblog01p node[294854]:     at ModuleJob.run (node:internal/modules/esm/module_job:195:25)
+Dec 12 14:03:10 paweblog01p node[294854]:     at async ModuleLoader.import (node:internal/modules/esm/loader:337:24)
+Dec 12 14:03:10 paweblog01p node[294854]:     at async loadESM (node:internal/process/esm_loader:34:7)
+Dec 12 14:03:10 paweblog01p node[294854]:     at async handleMainPromise (node:internal/modules/run_main:106:12)
+Dec 12 14:03:10 paweblog01p node[294854]: Node.js v18.20.8
+Dec 12 14:03:10 paweblog01p systemd[1]: api-proxy.service: Main process exited, code=exited, status=1/FAILURE
+Dec 12 14:03:10 paweblog01p systemd[1]: api-proxy.service: Failed with result 'exit-code'.
+Dec 12 14:03:20 paweblog01p systemd[1]: api-proxy.service: Scheduled restart job, restart counter is at 545.
+Dec 12 14:03:20 paweblog01p systemd[1]: Stopped PanoVision API Proxy Service.
+Dec 12 14:03:20 paweblog01p systemd[1]: Started PanoVision API Proxy Service.
+Dec 12 14:03:20 paweblog01p node[294868]: file:///opt/New-Panovision/deploy/api-proxy.js:1
+Dec 12 14:03:20 paweblog01p node[294868]: const http = require('http');
+Dec 12 14:03:20 paweblog01p node[294868]:              ^
+Dec 12 14:03:20 paweblog01p node[294868]: ReferenceError: require is not defined in ES module scope, you can use import instead
+Dec 12 14:03:20 paweblog01p node[294868]: This file is being treated as an ES module because it has a '.js' file extension and '/opt/New-Panovision/package.json' contains "type": "module". To treat it as a CommonJS script, rename it to use the '.cjs' file>
+Dec 12 14:03:20 paweblog01p node[294868]:     at file:///opt/New-Panovision/deploy/api-proxy.js:1:14
+Dec 12 14:03:20 paweblog01p node[294868]:     at ModuleJob.run (node:internal/modules/esm/module_job:195:25)
+Dec 12 14:03:20 paweblog01p node[294868]:     at async ModuleLoader.import (node:internal/modules/esm/loader:337:24)
+Dec 12 14:03:20 paweblog01p node[294868]:     at async loadESM (node:internal/process/esm_loader:34:7)
+Dec 12 14:03:20 paweblog01p node[294868]:     at async handleMainPromise (node:internal/modules/run_main:106:12)
+Dec 12 14:03:20 paweblog01p node[294868]: Node.js v18.20.8
+Dec 12 14:03:20 paweblog01p systemd[1]: api-proxy.service: Main process exited, code=exited, status=1/FAILURE
+Dec 12 14:03:20 paweblog01p systemd[1]: api-proxy.service: Failed with result 'exit-code'.
