@@ -108,7 +108,7 @@ const SearchHeader: React.FC<Props> = ({ onSearch, isSearching }) => {
               <input
                 type="text"
                 name="srcIp"
-                placeholder="e.g. 10.1.1.5"
+                placeholder="e.g. 192.168.1.5"
                 value={params.srcIp}
                 onChange={handleChange}
                 className={`block w-full px-3 py-2 text-sm border rounded-md bg-slate-950 text-slate-200 focus:ring-1 focus:ring-brand-500 focus:border-brand-500 outline-none placeholder-slate-700 font-mono transition-colors ${params.isNotSrcIp ? 'border-red-900/50 bg-red-950/10' : 'border-slate-700'}`}

@@ -30,7 +30,7 @@ You submit the CSR to a Certificate Authority (CA) to get a signed SSL certifica
 
 The script will prompt you for:
 
-- **Common Name (CN)**: Your domain name or IP address (e.g., `panovision.sncorp.com` or `10.100.5.227`)
+- **Common Name (CN)**: Your domain name or IP address (e.g., `panovision.example.com` or `192.168.1.100`)
 - **Organization (O)**: Your company or organization name
 - **Organizational Unit (OU)**: Department or division (e.g., IT Department)
 - **City/Locality (L)**: City where your organization is located
@@ -66,7 +66,7 @@ sudo chmod 600 /etc/ssl/panovision/panovision.key
 ```bash
 sudo openssl req -new -key /etc/ssl/panovision/panovision.key \
     -out /etc/ssl/panovision/panovision.csr \
-    -subj "/C=US/ST=State/L=City/O=Organization/OU=IT/CN=panovision.sncorp.com"
+    -subj "/C=US/ST=State/L=City/O=Organization/OU=IT/CN=panovision.example.com"
 ```
 
 ### Step 3: View CSR
@@ -97,7 +97,7 @@ For Let's Encrypt, use Certbot instead of manual CSR:
 
 ```bash
 sudo dnf install -y certbot python3-certbot-apache
-sudo certbot --apache -d panovision.sncorp.com
+sudo certbot --apache -d panovision.example.com
 ```
 
 ### Commercial CA
@@ -165,7 +165,7 @@ openssl x509 -in /etc/ssl/panovision/panovision.crt -noout -text
 openssl x509 -in /etc/ssl/panovision/panovision.crt -noout -dates
 
 # Test SSL connection
-openssl s_client -connect panovision.sncorp.com:443 -showcerts
+openssl s_client -connect panovision.example.com:443 -showcerts
 ```
 
 ## Common Issues
@@ -241,5 +241,5 @@ sudo httpd -t
 sudo systemctl restart httpd
 
 # 6. Verify
-curl -vI https://panovision.sncorp.com
+curl -vI https://panovision.example.com
 ```

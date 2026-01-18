@@ -23,7 +23,7 @@ echo ""
 mkdir -p "$SSL_DIR"
 
 # Get server information
-read -p "Common Name (CN) - Domain name or IP [e.g., panovision.sncorp.com or 10.100.5.227]: " CN
+read -p "Common Name (CN) - Domain name or IP [e.g., panovision.example.com or 192.168.1.100]: " CN
 if [ -z "$CN" ]; then
     echo "Error: Common Name is required"
     exit 1

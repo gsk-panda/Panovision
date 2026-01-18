@@ -25,8 +25,8 @@ sudo ./deploy/install-new.sh
 
 The script will prompt:
 ```
-Server URL or IP (e.g., panovision.sncorp.com or 10.100.5.227): panovision.sncorp.com
-Panorama IP or URL (e.g., panorama.example.com or 10.1.0.100): https://10.1.0.100
+Server URL or IP (e.g., panovision.example.com or 192.168.1.100): panovision.example.com
+Panorama IP or URL (e.g., panorama.example.com or 192.168.1.50): https://192.168.1.50
 Panorama API Key: [your-api-key]
 
 Azure OIDC Configuration (required for OIDC authentication):
@@ -34,7 +34,7 @@ Leave blank to disable OIDC and allow anonymous access
 
 Azure Client ID (VITE_AZURE_CLIENT_ID): 12345678-1234-1234-1234-123456789012
 Azure Authority (e.g., https://login.microsoftonline.com/tenant-id): https://login.microsoftonline.com/your-tenant-id
-Azure Redirect URI (default: https://panovision.sncorp.com): [press Enter for default]
+Azure Redirect URI (default: https://panovision.example.com): [press Enter for default]
 ```
 
 ## Disabling OIDC

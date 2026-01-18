@@ -236,7 +236,7 @@ function App() {
             <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-3">OVERVIEW</h2>
             <div className="space-y-1">
               <a
-                href="https://panovision.sncorp.com/changes"
+                href="/changes"
                 className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all ${
                   isChangesPage
                     ? 'bg-brand-500/20 text-brand-400 border-l-2 border-brand-500'
@@ -247,7 +247,7 @@ function App() {
                 Change Database
               </a>
               <a
-                href="https://panovision.sncorp.com/logs"
+                href="/logs"
                 className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all ${
                   isLogsPage
                     ? 'bg-brand-500/20 text-brand-400 border-l-2 border-brand-500'

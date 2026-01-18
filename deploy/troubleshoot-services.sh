@@ -192,7 +192,7 @@ else
     openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
         -keyout /etc/ssl/panovision/panovision-selfsigned.key \
         -out /etc/ssl/panovision/panovision-selfsigned.crt \
-        -subj "/C=US/ST=State/L=City/O=Organization/CN=panovision.sncorp.com" 2>/dev/null
+        -subj "/C=US/ST=State/L=City/O=Organization/CN=panovision.example.com" 2>/dev/null
     chmod 600 /etc/ssl/panovision/panovision-selfsigned.key
     chmod 644 /etc/ssl/panovision/panovision-selfsigned.crt
     systemctl reload nginx

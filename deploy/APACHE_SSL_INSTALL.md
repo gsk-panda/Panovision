@@ -105,7 +105,7 @@ Both commands should output the same MD5 hash.
 ### Test SSL Connection
 
 ```bash
-openssl s_client -connect panovision.sncorp.com:443 -showcerts
+openssl s_client -connect panovision.example.com:443 -showcerts
 ```
 
 ## Common Issues

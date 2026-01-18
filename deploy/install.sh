@@ -5,7 +5,7 @@ set -e
 # PanoVision Installation Script - Complete Version with All Fixes
 # This script includes all fixes discovered during deployment
 
-GITHUB_REPO="https://github.com/gsk-panda/Panovision.git"
+GITHUB_REPO="https://github.com/your-org/Panovision.git"
 INSTALL_DIR="/opt/Panovision"
 OIDC_ENABLED="true"
 
@@ -78,10 +78,10 @@ echo "Configuration"
 echo "=========================================="
 echo ""
 
-read -p "Server URL or IP (e.g., panovision.sncorp.com or 10.100.5.227): " SERVER_URL
-SERVER_URL=${SERVER_URL:-panovision.sncorp.com}
+read -p "Server URL or IP (e.g., panovision.example.com or 192.168.1.100): " SERVER_URL
+SERVER_URL=${SERVER_URL:-panovision.example.com}
 
-read -p "Panorama IP or URL (e.g., panorama.example.com or 10.1.0.100): " PANORAMA_URL
+read -p "Panorama IP or URL (e.g., panorama.example.com or 192.168.1.50): " PANORAMA_URL
 PANORAMA_URL=${PANORAMA_URL:-panorama.example.com}
 
 if [[ ! "$PANORAMA_URL" =~ ^https?:// ]]; then
@@ -144,8 +144,8 @@ NODE_INSTALL_METHOD=${NODE_INSTALL_METHOD:-1}
 
 JFROG_REPO_URL=""
 if [ "$NODE_INSTALL_METHOD" = "1" ]; then
-    read -p "JFrog Repository URL (default: https://jfrog.devworks.sncorp.com/artifactory/devworks-misc/repofiles/rhel/rocky9.repo): " JFROG_REPO_URL
-    JFROG_REPO_URL=${JFROG_REPO_URL:-https://jfrog.devworks.sncorp.com/artifactory/devworks-misc/repofiles/rhel/rocky9.repo}
+    read -p "JFrog Repository URL (default: https://jfrog.example.com/artifactory/repo-name/repofiles/rhel/rocky9.repo): " JFROG_REPO_URL
+    JFROG_REPO_URL=${JFROG_REPO_URL:-https://jfrog.example.com/artifactory/repo-name/repofiles/rhel/rocky9.repo}
 fi
 
 echo ""
@@ -557,7 +557,7 @@ if [ ! -f "$APACHE_CONFIG_SOURCE" ]; then
 fi
 
 # Update server name in config
-sed "s|panovision.sncorp.com|$SERVER_URL|g" "$APACHE_CONFIG_SOURCE" > "$APACHE_CONF"
+sed "s|panovision.example.com|$SERVER_URL|g" "$APACHE_CONFIG_SOURCE" > "$APACHE_CONF"
 echo "✓ Apache configuration updated with server name: $SERVER_URL"
 
 # Ensure required modules are enabled in main config

@@ -33,7 +33,7 @@ A modern web application for searching and analyzing Palo Alto Networks Panorama
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/gsk-panda/Panovision.git
+   git clone https://github.com/your-org/Panovision.git
    cd Panovision
    ```
 
@@ -234,4 +234,4 @@ For issues or questions:
 
 ## Related Projects
 
-- [PaloChangeLogs](https://github.com/gsk-panda/PaloChangeLogs) - Change database application
+- [PaloChangeLogs](https://github.com/your-org/PaloChangeLogs) - Change database application

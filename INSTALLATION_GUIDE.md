@@ -41,7 +41,7 @@ Complete installation guide for deploying PanoVision on RHEL 9.7 with Apache HTT
 ```bash
 ssh root@your-server-ip
 cd /opt
-git clone https://github.com/gsk-panda/Panovision.git
+git clone https://github.com/your-org/Panovision.git
 cd Panovision
 sudo chmod +x deploy/install.sh
 sudo ./deploy/install.sh
@@ -80,14 +80,14 @@ The script will prompt for the following information:
 
 #### Server Configuration
 
-- **Server URL or IP**: Enter your server hostname (e.g., `panovision.sncorp.com`) or IP address (e.g., `10.100.5.227`)
+- **Server URL or IP**: Enter your server hostname (e.g., `panovision.example.com`) or IP address (e.g., `192.168.1.100`)
 
 #### Panorama Configuration
 
 - **Panorama IP or URL**: Enter your Panorama server address
-  - Can be IP: `10.1.0.100`
+  - Can be IP: `192.168.1.50`
   - Can be hostname: `panorama.example.com`
-  - Can include protocol: `https://10.1.0.100`
+  - Can include protocol: `https://192.168.1.50`
 - **Panorama API Key**: Enter your Panorama API key
 
 #### Node.js Installation
@@ -177,7 +177,7 @@ Ensure DNS is configured to point to your server:
 
 ```bash
 # Verify DNS resolution
-nslookup panovision.sncorp.com
+nslookup panovision.example.com
 # Should return your server IP
 ```
 
@@ -198,7 +198,7 @@ The installation script automatically creates a self-signed certificate. Users w
 dnf install -y certbot python3-certbot-apache
 
 # Obtain certificate
-certbot --apache -d panovision.sncorp.com
+certbot --apache -d panovision.example.com
 
 # Auto-renewal is set up automatically
 ```

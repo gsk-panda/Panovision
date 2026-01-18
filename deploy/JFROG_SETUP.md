@@ -9,7 +9,7 @@ When NodeSource is blocked by your corporate proxy, you can configure the instal
 Set the `JFROG_REPO_URL` environment variable before running the installation script:
 
 ```bash
-export JFROG_REPO_URL="https://jfrog.devworks.sncorp.com/artifactory/devworks-misc/repofiles/rhel/rocky9.repo"
+export JFROG_REPO_URL="https://jfrog.example.com/artifactory/repo-name/repofiles/rhel/rocky9.repo"
 
 cd /opt/Panovision
 ./deploy/install.sh
@@ -20,7 +20,7 @@ When prompted for Node.js installation method, it will automatically use JFrog.
 ### Option 2: Interactive Prompt
 
 When running the installation script, choose option 1 when prompted for Node.js installation method, then provide:
-- JFrog Repository URL (defaults to: `https://jfrog.devworks.sncorp.com/artifactory/devworks-misc/repofiles/rhel/rocky9.repo`)
+- JFrog Repository URL (defaults to: `https://jfrog.example.com/artifactory/repo-name/repofiles/rhel/rocky9.repo`)
 
 ## How It Works
 
@@ -38,7 +38,7 @@ The repository file should be a standard YUM repository file (`.repo` format) co
 ```ini
 [repository-name]
 name=Repository Description
-baseurl=https://jfrog.devworks.sncorp.com/artifactory/path/to/repo
+baseurl=https://jfrog.example.com/artifactory/path/to/repo
 enabled=1
 gpgcheck=0
 ```
@@ -74,17 +74,17 @@ sudo dnf update -y --disablerepo=nodesource*
 
 1. **Verify the URL is accessible:**
    ```bash
-   curl -I https://jfrog.devworks.sncorp.com/artifactory/devworks-misc/repofiles/rhel/rocky9.repo
+   curl -I https://jfrog.example.com/artifactory/repo-name/repofiles/rhel/rocky9.repo
    ```
 
 2. **Check if authentication is required:**
    ```bash
-   curl -u username:password https://jfrog.devworks.sncorp.com/artifactory/devworks-misc/repofiles/rhel/rocky9.repo
+   curl -u username:password https://jfrog.example.com/artifactory/repo-name/repofiles/rhel/rocky9.repo
    ```
 
 3. **Verify network connectivity:**
    ```bash
-   ping jfrog.devworks.sncorp.com
+   ping jfrog.example.com
    ```
 
 ### Error: Failed to install Node.js from JFrog repository
@@ -116,7 +116,7 @@ If JFrog requires authentication, you can:
 **Option 1: Use .netrc file**
 ```bash
 cat > ~/.netrc <<EOF
-machine jfrog.devworks.sncorp.com
+machine jfrog.example.com
 login your-username
 password your-password
 EOF
@@ -133,7 +133,7 @@ nano /etc/yum.repos.d/rocky9.repo
 
 Add authentication to the baseurl:
 ```ini
-baseurl=https://username:password@jfrog.devworks.sncorp.com/artifactory/path/to/repo
+baseurl=https://username:password@jfrog.example.com/artifactory/path/to/repo
 ```
 
 **Option 3: Use JFrog API Key**
@@ -148,7 +148,7 @@ If JFrog setup is problematic, you can manually install Node.js:
 
 ```bash
 curl -o /etc/yum.repos.d/rocky9.repo \
-  https://jfrog.devworks.sncorp.com/artifactory/devworks-misc/repofiles/rhel/rocky9.repo
+  https://jfrog.example.com/artifactory/repo-name/repofiles/rhel/rocky9.repo
 ```
 
 ### Step 2: Install Node.js
@@ -179,7 +179,7 @@ cd /opt/Panovision
 
 ```bash
 # Set environment variable
-export JFROG_REPO_URL="https://jfrog.devworks.sncorp.com/artifactory/devworks-misc/repofiles/rhel/rocky9.repo"
+export JFROG_REPO_URL="https://jfrog.example.com/artifactory/repo-name/repofiles/rhel/rocky9.repo"
 
 # Run installation
 cd /opt/Panovision
