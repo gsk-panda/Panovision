@@ -234,4 +234,4 @@ For issues or questions:
 
 ## Related Projects
 
-- [PaloChangeLogs](https://github.com/your-org/PaloChangeLogs) - Change database application
+- [PaloChangeLogs](https://github.com/gsk-panda/PaloChangeLogs) - Change database application
