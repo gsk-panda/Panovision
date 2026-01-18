@@ -223,7 +223,7 @@ For more troubleshooting help, see [deploy/README.md](deploy/README.md).
 
 ## License
 
-[Add your license information here]
+Disclaimer: This software is provided "as is", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, and noninfringement. In no event shall the author or copyright holder be liable for any claim, damages, or other liability, whether in an action of contract, tort, or otherwise, arising from, out of, or in connection with the software or the use or other dealings in the software. Use at your own risk.
 
 ## Support
 
