@@ -47,7 +47,7 @@ Customize which columns are displayed and their order to match your workflow pre
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/your-org/Panovision.git
+   git clone https://github.com/gsk-panda/Panovision.git
    cd Panovision
    ```
 
