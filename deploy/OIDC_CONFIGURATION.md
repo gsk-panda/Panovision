@@ -11,7 +11,7 @@ When you run `deploy/install-new.sh`, the script will prompt you for:
 1. **Server URL or IP** - Your server hostname or IP address
 2. **Panorama IP or URL** - Your Panorama server URL
 3. **Panorama API Key** - Your Panorama API key
-4. **Azure OIDC Configuration** (if OIDC is enabled):
+4. **Azure OIDC Configuration** (optional, disabled by default):
    - **Azure Client ID** (`VITE_AZURE_CLIENT_ID`)
    - **Azure Authority** (e.g., `https://login.microsoftonline.com/tenant-id`)
    - **Azure Redirect URI** (defaults to `https://your-server-url`)
@@ -29,27 +29,42 @@ Server URL or IP (e.g., panovision.example.com or 192.168.1.100): panovision.exa
 Panorama IP or URL (e.g., panorama.example.com or 192.168.1.50): https://192.168.1.50
 Panorama API Key: [your-api-key]
 
-Azure OIDC Configuration (required for OIDC authentication):
-Leave blank to disable OIDC and allow anonymous access
+Azure OIDC Configuration (optional):
+OIDC is disabled by default. Provide credentials to enable OIDC authentication.
+Leave blank to keep OIDC disabled (allows anonymous access)
 
 Azure Client ID (VITE_AZURE_CLIENT_ID): 12345678-1234-1234-1234-123456789012
 Azure Authority (e.g., https://login.microsoftonline.com/tenant-id): https://login.microsoftonline.com/your-tenant-id
 Azure Redirect URI (default: https://panovision.example.com): [press Enter for default]
 ```
 
-## Disabling OIDC
+## Enabling OIDC
 
-If you want to disable OIDC (allow anonymous access), you can:
+OIDC is disabled by default. To enable OIDC authentication:
 
-1. **During installation**: Leave the Azure Client ID and Authority fields blank when prompted
-2. **Command line**: Run with `--disable-oidc` flag:
+1. **During installation**: Provide Azure Client ID and Authority when prompted
+2. **Command line**: Run with `--enable-oidc` flag:
    ```bash
-   sudo ./deploy/install-new.sh --disable-oidc
+   sudo ./deploy/install.sh --enable-oidc
    ```
 3. **Environment variable**: Set before running:
    ```bash
+   export VITE_OIDC_ENABLED=true
+   sudo ./deploy/install.sh
+   ```
+
+## Disabling OIDC
+
+If OIDC is enabled and you want to disable it (allow anonymous access):
+
+1. **Command line**: Run with `--disable-oidc` flag:
+   ```bash
+   sudo ./deploy/install.sh --disable-oidc
+   ```
+2. **Environment variable**: Set before running:
+   ```bash
    export VITE_OIDC_ENABLED=false
-   sudo ./deploy/install-new.sh
+   sudo ./deploy/install.sh
    ```
 
 ## Getting Azure OIDC Information

@@ -51,15 +51,18 @@ VITE_AZURE_AUTHORITY=https://login.microsoftonline.com/your-tenant-id
 VITE_AZURE_REDIRECT_URI=https://panovision.example.com
 
 # OIDC Feature Toggle
-# Set to 'false' or '0' to disable OIDC authentication
+# Set to 'true' or '1' to enable OIDC authentication
 # When disabled, the app will allow anonymous access
-# Default: enabled (true)
-VITE_OIDC_ENABLED=true
+# Default: disabled (false)
+VITE_OIDC_ENABLED=false
 ```
 
-**To disable OIDC authentication**, set:
+**To enable OIDC authentication**, set:
 ```env
-VITE_OIDC_ENABLED=false
+VITE_OIDC_ENABLED=true
+VITE_AZURE_CLIENT_ID=your-client-id-here
+VITE_AZURE_AUTHORITY=https://login.microsoftonline.com/your-tenant-id
+VITE_AZURE_REDIRECT_URI=https://panovision.example.com
 ```
 
 **For production deployment**, set these as environment variables on your server or use a build-time configuration.

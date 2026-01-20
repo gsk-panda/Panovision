@@ -7,7 +7,7 @@ set -e
 
 GITHUB_REPO="https://github.com/your-org/Panovision.git"
 INSTALL_DIR="/opt/Panovision"
-OIDC_ENABLED="true"
+OIDC_ENABLED="false"
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -26,8 +26,8 @@ while [[ $# -gt 0 ]]; do
             echo "Usage: $0 [OPTIONS]"
             echo ""
             echo "Options:"
-            echo "  --disable-oidc, --no-oidc    Disable OIDC authentication (allows anonymous access)"
-            echo "  --enable-oidc                Enable OIDC authentication (default)"
+            echo "  --disable-oidc, --no-oidc    Disable OIDC authentication (default, allows anonymous access)"
+            echo "  --enable-oidc                Enable OIDC authentication"
             echo "  -h, --help                   Show this help message"
             echo ""
             echo "Environment Variables:"

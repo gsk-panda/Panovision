@@ -92,9 +92,9 @@ The Panorama API key and URL are configured during installation and stored secur
 - API Key: `/etc/panovision/api-key` (640 permissions, root:panovision)
 - Configuration: `/etc/panovision/panorama-config`
 
-### OIDC Authentication
+### OIDC Authentication (Optional)
 
-OIDC authentication is configured during installation. To set up Azure AD:
+OIDC authentication is disabled by default. To enable and set up Azure AD:
 
 1. Create an App Registration in Azure Portal
 2. Configure redirect URI: `https://your-server-url`

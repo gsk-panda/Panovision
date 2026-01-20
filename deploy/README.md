@@ -196,10 +196,10 @@ sudo ./deploy/troubleshoot-services.sh
 ### Installation Script Options
 
 ```bash
-# Disable OIDC (allow anonymous access)
+# Disable OIDC (default, allows anonymous access)
 sudo ./deploy/install.sh --disable-oidc
 
-# Enable OIDC (default)
+# Enable OIDC
 sudo ./deploy/install.sh --enable-oidc
 
 # Set environment variable

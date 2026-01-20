@@ -2,7 +2,7 @@ import { Configuration, PopupRequest } from '@azure/msal-browser';
 
 export const isOidcEnabled = (): boolean => {
   const envValue = import.meta.env.VITE_OIDC_ENABLED;
-  return envValue !== 'false' && envValue !== '0';
+  return envValue === 'true' || envValue === '1';
 };
 
 export const msalConfig: Configuration = {
