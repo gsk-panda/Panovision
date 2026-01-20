@@ -11,6 +11,20 @@ A modern web application for searching and analyzing Palo Alto Networks Panorama
 - **Responsive Design**: Modern UI built with React and Tailwind CSS
 - **API Proxy**: Secure backend proxy for Panorama API communication
 
+## Screenshots
+
+### Main Application Interface
+
+![PanoVision Logs](panovision-logs.png)
+
+The main interface showing traffic log search results with filtering options, statistics, and detailed log entries.
+
+### Column Customization
+
+![Column Customization](panovision-columns.png)
+
+Customize which columns are displayed and their order to match your workflow preferences.
+
 ## Technology Stack
 
 - **Frontend**: React 18, TypeScript, Vite, Tailwind CSS
