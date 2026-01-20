@@ -34,6 +34,7 @@ if command -v openssl &>/dev/null; then
     PANORAMA_HOST=$(echo $PANORAMA_URL | sed 's|https\?://||' | cut -d'/' -f1)
     echo "Connecting to: ${PANORAMA_HOST}:443"
     
+    # Extract full certificate chain including server and intermediate certificates
     echo | openssl s_client -showcerts -connect "${PANORAMA_HOST}:443" -servername "${PANORAMA_HOST}" 2>&1 | \
         sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > "$CA_FILE"
     
@@ -41,6 +42,23 @@ if command -v openssl &>/dev/null; then
         echo "⚠ Warning: Could not extract certificate chain. Trying alternative method..."
         echo | openssl s_client -connect "${PANORAMA_HOST}:443" -servername "${PANORAMA_HOST}" 2>&1 | \
             sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > "$CA_FILE"
+    fi
+    
+    # Try to get the complete chain by following certificate links
+    # This helps get intermediate and root certificates that might not be in the initial chain
+    if [ -s "$CA_FILE" ]; then
+        echo "Attempting to extract complete certificate chain..."
+        TEMP_CHAIN=$(mktemp)
+        echo | openssl s_client -showcerts -verify_return_error -connect "${PANORAMA_HOST}:443" -servername "${PANORAMA_HOST}" 2>&1 | \
+            sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > "$TEMP_CHAIN"
+        
+        if [ -s "$TEMP_CHAIN" ]; then
+            # Combine both extractions to ensure we have all certificates
+            cat "$TEMP_CHAIN" >> "$CA_FILE"
+            # Remove duplicates by sorting and using unique
+            sort -u "$CA_FILE" > "${CA_FILE}.tmp" && mv "${CA_FILE}.tmp" "$CA_FILE"
+            rm -f "$TEMP_CHAIN"
+        fi
     fi
     
     if [ -s "$CA_FILE" ]; then

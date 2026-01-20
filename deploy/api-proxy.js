@@ -41,11 +41,41 @@ function loadConfig() {
       const caCerts = caCert.split(/-----BEGIN CERTIFICATE-----/).filter(c => c.trim()).map(c => 
         '-----BEGIN CERTIFICATE-----' + c.trim()
       );
+      
+      // Try to load system CA bundle and combine with custom certificates
+      // This ensures we have both the custom intermediate certs AND the system root CAs
+      let allCaCerts = [...caCerts];
+      
+      // Try to load system CA bundle from common locations
+      const systemCaPaths = [
+        '/etc/ssl/certs/ca-bundle.crt',
+        '/etc/ssl/certs/ca-certificates.crt',
+        '/etc/pki/tls/certs/ca-bundle.crt',
+        '/etc/pki/tls/certs/ca-bundle.trust.crt',
+        '/usr/share/pki/ca-trust-source/ca-bundle.trust.crt',
+      ];
+      
+      for (const caPath of systemCaPaths) {
+        if (fs.existsSync(caPath)) {
+          try {
+            const systemCa = fs.readFileSync(caPath, 'utf8');
+            const systemCerts = systemCa.split(/-----BEGIN CERTIFICATE-----/).filter(c => c.trim()).map(c => 
+              '-----BEGIN CERTIFICATE-----' + c.trim()
+            );
+            allCaCerts = [...allCaCerts, ...systemCerts];
+            console.log(`  Also loaded system CA bundle from: ${caPath} (${systemCerts.length} certificates)`);
+            break;
+          } catch (err) {
+            // Continue to next path
+          }
+        }
+      }
+      
       tlsOptions = {
         rejectUnauthorized: true,
-        ca: caCerts,
+        ca: allCaCerts,
       };
-      console.log(`✓ Using custom CA certificate(s) for Panorama TLS verification (${caCerts.length} certificate(s))`);
+      console.log(`✓ Using custom CA certificate(s) for Panorama TLS verification (${caCerts.length} custom + system CA bundle)`);
       console.log(`  Certificate file: ${PANORAMA_CA_FILE}`);
     } else {
       tlsOptions = {
