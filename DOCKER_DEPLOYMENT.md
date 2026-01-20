@@ -73,7 +73,49 @@ From your local machine:
 rsync -avz --exclude 'node_modules' --exclude 'dist' /path/to/Panovision user@your-server-ip:~/
 ```
 
-## Step 4: Build and Run the Docker Image
+## Step 4: Configure Environment Variables
+
+Create a `.env` file in the project root with your configuration:
+
+```bash
+cd ~/panovision
+nano .env
+```
+
+Add the following variables:
+
+```env
+# Required: Panorama server URL
+# Replace with your actual Panorama server URL
+VITE_PANORAMA_SERVER=https://panorama.example.com
+
+# Optional: OIDC Authentication (disabled by default)
+# Only set these if you want to enable OIDC authentication
+# Leave VITE_OIDC_ENABLED=false or omit it to allow anonymous access
+VITE_OIDC_ENABLED=false
+VITE_AZURE_CLIENT_ID=
+VITE_AZURE_AUTHORITY=
+VITE_AZURE_REDIRECT_URI=
+```
+
+**Environment Variable Summary:**
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `VITE_PANORAMA_SERVER` | **Yes** | None | Panorama server URL (e.g., `https://panorama.example.com`) |
+| `VITE_OIDC_ENABLED` | No | `false` | Set to `true` to enable OIDC authentication |
+| `VITE_AZURE_CLIENT_ID` | No* | None | Azure AD Client ID (*required if OIDC enabled) |
+| `VITE_AZURE_AUTHORITY` | No* | None | Azure AD Authority URL (*required if OIDC enabled) |
+| `VITE_AZURE_REDIRECT_URI` | No* | Current origin | OIDC redirect URI (*required if OIDC enabled) |
+
+**Important Notes:**
+- The `.env` file is automatically ignored by git (in `.gitignore`) and will not be committed to the repository
+- `VITE_PANORAMA_SERVER` is **required** - the application will not work without it
+- OIDC authentication is **optional** - leave `VITE_OIDC_ENABLED=false` (or omit it) to allow anonymous access
+- Only set OIDC variables if you want to enable Azure AD authentication
+- These variables are embedded at build time, so you must rebuild the Docker image if you change them
+
+## Step 5: Build and Run the Docker Image
 
 ### Option A: Using Docker Compose (Recommended)
 ```bash
@@ -81,14 +123,27 @@ cd ~/panovision
 docker-compose up -d --build
 ```
 
-### Option B: Using Docker commands
+The Dockerfile will automatically read environment variables from the `.env` file during build.
+
+### Option B: Using Docker commands with build arguments
 ```bash
 cd ~/panovision
-docker build -t panovision .
+docker build \
+  --build-arg VITE_PANORAMA_SERVER=https://panorama.example.com \
+  --build-arg VITE_OIDC_ENABLED=false \
+  -t panovision .
+
 docker run -d -p 3000:80 --name panovision --restart unless-stopped panovision
 ```
 
-## Step 5: Verify the Container is Running
+### Option C: Using Docker commands with .env file
+```bash
+cd ~/panovision
+docker build --build-arg $(cat .env | grep -v '^#' | xargs) -t panovision .
+docker run -d -p 3000:80 --name panovision --restart unless-stopped panovision
+```
+
+## Step 6: Verify the Container is Running
 
 ```bash
 docker ps
@@ -97,14 +152,14 @@ docker logs panovision
 
 You should see the container running and can access the application at `http://your-server-ip:3000`
 
-## Step 6: Configure Firewall (if enabled)
+## Step 7: Configure Firewall (if enabled)
 
 ```bash
 sudo ufw allow 3000/tcp
 sudo ufw status
 ```
 
-## Step 7: Set Up as a Systemd Service (Optional)
+## Step 8: Set Up as a Systemd Service (Optional)
 
 Create a systemd service for better management:
 
@@ -138,7 +193,7 @@ sudo systemctl enable panovision.service
 sudo systemctl start panovision.service
 ```
 
-## Step 8: Set Up Reverse Proxy with Nginx (Optional)
+## Step 9: Set Up Reverse Proxy with Nginx (Optional)
 
 If you want to serve on port 80/443 with SSL:
 

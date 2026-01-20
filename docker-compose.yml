@@ -3,6 +3,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - VITE_PANORAMA_SERVER=${VITE_PANORAMA_SERVER}
+        - VITE_OIDC_ENABLED=${VITE_OIDC_ENABLED:-false}
+        - VITE_AZURE_CLIENT_ID=${VITE_AZURE_CLIENT_ID:-}
+        - VITE_AZURE_AUTHORITY=${VITE_AZURE_AUTHORITY:-}
+        - VITE_AZURE_REDIRECT_URI=${VITE_AZURE_REDIRECT_URI:-}
     ports:
       - "3000:80"
     container_name: panovision

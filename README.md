@@ -106,6 +106,8 @@ The Panorama API key and URL are configured during installation and stored secur
 - API Key: `/etc/panovision/api-key` (640 permissions, root:panovision)
 - Configuration: `/etc/panovision/panorama-config`
 
+**Required**: Panorama server URL must be configured via `VITE_PANORAMA_SERVER` environment variable.
+
 ### OIDC Authentication (Optional)
 
 OIDC authentication is disabled by default. To enable and set up Azure AD:
@@ -143,9 +145,17 @@ See [deploy/APACHE_SSL_CSR.md](deploy/APACHE_SSL_CSR.md) and [deploy/APACHE_SSL_
 
 2. **Create environment file:**
    ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
+   # Create .env file with required variables
+   cat > .env <<EOF
+   VITE_PANORAMA_SERVER=https://panorama.example.com
+   VITE_OIDC_ENABLED=false
+   EOF
+   # Edit .env with your Panorama server URL
    ```
+   
+   **Required**: Set `VITE_PANORAMA_SERVER` to your Panorama server URL.
+   
+   **Optional**: OIDC variables are only needed if enabling authentication (see [Environment Variables](#environment-variables) section below).
 
 3. **Run development server:**
    ```bash
@@ -160,11 +170,33 @@ See [deploy/APACHE_SSL_CSR.md](deploy/APACHE_SSL_CSR.md) and [deploy/APACHE_SSL_
 
 ### Environment Variables
 
-- `VITE_PANORAMA_SERVER`: Panorama server URL
-- `VITE_OIDC_ENABLED`: Enable/disable OIDC (true/false)
-- `VITE_AZURE_CLIENT_ID`: Azure AD Client ID
-- `VITE_AZURE_AUTHORITY`: Azure AD Authority URL
-- `VITE_AZURE_REDIRECT_URI`: OIDC redirect URI
+#### Required Variables
+
+- `VITE_PANORAMA_SERVER`: Panorama server URL (required)
+  - Example: `https://panorama.example.com` or `https://192.168.1.100`
+
+#### Optional Variables (OIDC Authentication)
+
+OIDC authentication is **disabled by default**. The following variables are only needed if you want to enable OIDC authentication:
+
+- `VITE_OIDC_ENABLED`: Enable/disable OIDC authentication
+  - Set to `true` or `1` to enable OIDC (default: `false`)
+  - When `false` or not set, the application allows anonymous access
+
+- `VITE_AZURE_CLIENT_ID`: Azure AD Application (client) ID
+  - Required only if `VITE_OIDC_ENABLED=true`
+  - Example: `12345678-1234-1234-1234-123456789012`
+
+- `VITE_AZURE_AUTHORITY`: Azure AD authority URL
+  - Required only if `VITE_OIDC_ENABLED=true`
+  - Example: `https://login.microsoftonline.com/your-tenant-id`
+
+- `VITE_AZURE_REDIRECT_URI`: OIDC redirect URI after authentication
+  - Required only if `VITE_OIDC_ENABLED=true`
+  - Example: `https://panovision.example.com`
+  - Defaults to current origin if not specified
+
+**Note**: For Docker deployments, these variables must be set as build arguments during the build process (see [DOCKER_DEPLOYMENT.md](DOCKER_DEPLOYMENT.md)).
 
 ## Deployment
 
