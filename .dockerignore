@@ -1,0 +1,13 @@
+node_modules
+dist
+.git
+.gitignore
+.vscode
+.idea
+*.log
+.env*
+*.local
+.DS_Store
+deploy
+*.md
+panovision-column.png
