@@ -55,7 +55,7 @@ docker-compose --version
 ### Option A: Using Git (Recommended)
 ```bash
 cd ~
-git clone <your-repository-url> panovision
+git clone https://github.com/gsk-panda/Panovision.git panovision
 cd panovision
 ```
 
