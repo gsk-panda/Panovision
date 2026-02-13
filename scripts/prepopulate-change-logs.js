@@ -453,3 +453,12 @@ async function main() {
 }
 
 main();
+
+./go.js: line 3: import: command not found
+./go.js: line 4: import: command not found
+./go.js: line 5: import: command not found
+./go.js: line 6: import: command not found
+./go.js: line 7: import: command not found
+./go.js: line 8: import: command not found
+./go.js: line 10: syntax error near unexpected token `('
+./go.js: line 10: `const db = sqlite3.verbose();'
