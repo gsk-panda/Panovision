@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/go.js" ]]; then
+  exec node "$SCRIPT_DIR/go.js" "$@"
+elif [[ -f "$SCRIPT_DIR/prepopulate.js" ]]; then
+  exec node "$SCRIPT_DIR/prepopulate.js" "$@"
+else
+  echo "Error: go.js or prepopulate.js not found in $SCRIPT_DIR" >&2
+  exit 1
+fi
